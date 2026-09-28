@@ -11,14 +11,18 @@
       margin: 0;
       padding: 0;
          background-color: #0d1117; /* Warna background gelap biar pas loading ga silau */
-       <!-- GPS Status -->
-        <div class="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs sm:text-sm">
-          <div class="flex items-center gap-2 text-slate-600">
-            <i class="fa-solid fa-location-dot text-emerald-500 text-sm sm:text-base"></i>
-            <span id="gps-status-text" class="font-medium text-[11px] sm:text-xs">Mendeteksi lokasi GPS...</span>
-          </div>
-          <button type="button" onclick="detectGeolocation()" class="text-indigo-600 font-bold hover:underline text-xs sm:text-sm cursor-pointer active:scale-95 font-rajdhani">Refresh</button>
-        </div>
+        <!-- Geofencing & Geolocation Settings Section -->
+          <div class="p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-700 text-[11px] sm:text-xs flex items-center gap-1.5 font-rajdhani uppercase tracking-wider">
+                <i class="fa-solid fa-location-crosshairs text-indigo-600"></i>
+                Geofencing Radius
+              </span>
+              <button type="button" onclick="getAdminCurrentLocation()" class="text-[10px] sm:text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200 active:scale-95 transition cursor-pointer font-rajdhani uppercase">
+                <i class="fa-solid fa-location-arrow"></i>
+                <span>Gunakan GPS Saya</span>
+              </button>
+            </div>
     }
     iframe {
       border: none;
