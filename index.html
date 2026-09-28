@@ -11,6 +11,14 @@
       margin: 0;
       padding: 0;
          background-color: #0d1117; /* Warna background gelap biar pas loading ga silau */
+       <!-- GPS Status -->
+        <div class="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs sm:text-sm">
+          <div class="flex items-center gap-2 text-slate-600">
+            <i class="fa-solid fa-location-dot text-emerald-500 text-sm sm:text-base"></i>
+            <span id="gps-status-text" class="font-medium text-[11px] sm:text-xs">Mendeteksi lokasi GPS...</span>
+          </div>
+          <button type="button" onclick="detectGeolocation()" class="text-indigo-600 font-bold hover:underline text-xs sm:text-sm cursor-pointer active:scale-95 font-rajdhani">Refresh</button>
+        </div>
     }
     iframe {
       border: none;
