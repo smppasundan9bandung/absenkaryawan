@@ -5,43 +5,779 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Absen Karyawan SMP Pasundan 9</title>
   
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    html, body {
-      width: 100%;
-      height: 100%;
-      height: 100dvh;
-      overflow: hidden;
-      background-color: #0f172a; /* Sleek dark background matching app shell */
-      -webkit-tap-highlight-color: transparent;
-    }
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Exo 2, Rajdhani, & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 
-    /* Iframe Container Fullscreen Fit */
-    .app-iframe {
-      width: 100%;
-      height: 100%;
-      height: 100dvh;
-      border: none;
-      outline: none;
-      display: block;
-    }
-  </style>
+  <?!= include('styles'); ?>
 </head>
 <body>
 
-  <iframe 
-    id="web-app-frame"
-    src="https://script.google.com/macros/s/AKfycbxpM96b1idp3nWEEZ_hDKvsq7C8MkHauXpoUk0HvQfMxtAzgxeBaTZJm7z3p2xWKT5i/exec" 
-    class="app-iframe"
-    allow="geolocation *; camera *; microphone *; display-capture *;"
-    allowfullscreen="true"
-    sandbox="allow-downloads allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation">
-  </iframe>
+  <div class="mobile-wrapper">
+    
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-md space-y-2 pointer-events-none"></div>
 
+    <!-- ================================================================= -->
+    <!-- VIEW 1: FORM LOGIN FUTURISTIK -->
+    <!-- ================================================================= -->
+    <div id="view-login" class="futuristic-login-bg flex items-center justify-center p-4 relative">
+      
+      <!-- Ambient Floating Orbs -->
+      <div class="floating-orb orb-1"></div>
+      <div class="floating-orb orb-2"></div>
+      <div class="floating-orb orb-3"></div>
+
+      <!-- Glassmorphism Card Wrapper -->
+      <div class="glass-card-futuristic w-full max-w-sm sm:max-w-md p-6 sm:p-8 relative z-10 my-auto text-slate-800">
+        
+        <!-- Tombol Quick Config API Web App (Dukungan GitHub Pages) -->
+        <button type="button" onclick="openModalApiConfig()" class="absolute top-4 right-4 text-slate-400 hover:text-indigo-600 p-2 text-xs font-bold rounded-xl bg-slate-100/80 hover:bg-indigo-50 border border-slate-200/80 transition flex items-center gap-1.5 shadow-sm cursor-pointer z-20" title="Pengaturan Server API Backend">
+          <i class="fa-solid fa-gear text-indigo-500"></i>
+          <span class="font-rajdhani font-extrabold uppercase text-[10px] tracking-wider text-slate-600">API Config</span>
+        </button>
+
+        <!-- Header Brand -->
+        <div class="text-center space-y-3 mb-6">
+          <div class="logo-aura-wrapper">
+            <img src="https://lh3.googleusercontent.com/d/1-Zhv5ioYGJE0l2aW4AgyN5_7T7ZqGP8W" alt="Logo SMP Pasundan 9" class="w-20 h-20 sm:w-24 sm:h-24 mx-auto object-contain drop-shadow-xl relative z-10">
+          </div>
+          <div class="space-y-1 pt-1">
+            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-100 text-indigo-700 font-rajdhani border border-indigo-200/60 inline-block shadow-sm">Portal Presensi Guru</span>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-slate-900 font-rajdhani uppercase">SMP Pasundan 9</h1>
+            <p class="text-xs text-slate-500 font-medium">Sistem Informasi Kehadiran & Presensi Online</p>
+          </div>
+        </div>
+
+        <!-- Form Login -->
+        <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase tracking-wider block">ID User / Username</label>
+            <div class="relative flex items-center">
+              <i class="fa-solid fa-user-circle absolute left-3.5 text-slate-400 text-sm"></i>
+              <input type="text" id="login-userid" required placeholder="Masukkan ID User Anda" class="w-full pl-10 pr-4 py-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 input-futuristic outline-none">
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase tracking-wider block">Kata Sandi / Password</label>
+            <div class="relative flex items-center">
+              <i class="fa-solid fa-lock absolute left-3.5 text-slate-400 text-sm"></i>
+              <input type="password" id="login-password" required placeholder="Masukkan Password Anda" class="w-full pl-10 pr-10 py-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 input-futuristic outline-none">
+              <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3 text-slate-400 hover:text-slate-600 p-1 font-bold text-sm" title="Tampilkan/Sembunyikan Password">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" id="btn-login" class="w-full py-3.5 rounded-xl font-black text-xs sm:text-sm text-white btn-shimmer flex items-center justify-center gap-2 font-rajdhani uppercase tracking-wider cursor-pointer">
+              <span>MASUK SEKARANG</span>
+              <i class="fa-solid fa-right-to-bracket text-sm"></i>
+            </button>
+          </div>
+        </form>
+
+        <!-- Footer Info -->
+        <div class="mt-6 pt-4 border-t border-slate-200/80 text-center">
+          <p class="text-[10px] text-slate-400 font-medium">© 2026 SMP Pasundan 9 Bandung • ZettBOT Architecture</p>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ================================================================= -->
+    <!-- VIEW 2: DASHBOARD UTAMA (PRESET USER LOGIN) -->
+    <!-- ================================================================= -->
+    <div id="view-dashboard" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+      
+      <!-- APP SCROLLABLE CONTAINER -->
+      <div id="app-container" class="no-scrollbar">
+
+        <!-- 1. HEADER BANNER KANAN ATAS -->
+        <div class="top-curved-banner">
+          
+          <!-- Animated Background Wave SVG Layer -->
+          <div class="header-wave-bg">
+            <svg class="header-swoosh-svg" viewBox="0 0 500 200" preserveAspectRatio="none">
+              <path class="wave-animated-1" d="M0,80 C150,140 350,40 500,100 L500,200 L0,200 Z" fill="#0284c7" opacity="0.40"></path>
+              <path class="wave-animated-2" d="M0,110 C180,40 320,150 500,80 L500,200 L0,200 Z" fill="#2563eb" opacity="0.35"></path>
+              <path d="M0,140 C140,100 360,160 500,120 L500,200 L0,200 Z" fill="#1152d4"></path>
+              <path d="M0,80 C150,140 350,40 500,100" fill="none" stroke="#38bdf8" stroke-width="2.5" opacity="0.45"></path>
+              <path d="M0,110 C180,40 320,150 500,80" fill="none" stroke="#facc15" stroke-width="2" opacity="0.50"></path>
+            </svg>
+          </div>
+
+          <!-- Header Content Container -->
+          <div class="header-content-box p-4">
+            
+            <!-- Group Kanan Atas: Logo (Kiri) + Keterangan Sekolah (Kanan) -->
+            <div class="header-top-right-group">
+              
+              <!-- Logo Sekolah (Berada di Kiri Keterangan Sekolah) -->
+              <div class="logo-aura-wrapper-centered shrink-0">
+                <img src="https://lh3.googleusercontent.com/d/1-Zhv5ioYGJE0l2aW4AgyN5_7T7ZqGP8W" alt="Logo SMP Pasundan 9" class="w-10 h-10 sm:w-11 sm:h-11 object-contain drop-shadow-md relative z-10">
+              </div>
+
+              <!-- Keterangan Sekolah Vertikal 3 Baris (Berada di Kanan Logo) -->
+              <div class="text-left space-y-0.5">
+                <div>
+                  <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase font-rajdhani bg-amber-400 text-slate-900 tracking-wider shadow-sm inline-block">SATUAN PENDIDIKAN</span>
+                </div>
+                <h2 class="text-xs sm:text-sm font-extrabold tracking-wide uppercase font-rajdhani text-white text-glow-contrast">SMP PASUNDAN 9</h2>
+                <h3 class="text-sm sm:text-base font-black tracking-wider uppercase font-rajdhani text-amber-300 text-title-glow">PRESENSI GURU</h3>
+              </div>
+
+              <!-- Tombol Keluar / Logout -->
+              <button type="button" onclick="handleLogout()" class="absolute top-3.5 right-3.5 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition flex items-center justify-center text-white text-xs sm:text-sm backdrop-blur-md border border-white/20 z-20 shadow-sm cursor-pointer" title="Keluar / Logout">
+                <i class="fa-solid fa-right-from-bracket"></i>
+              </button>
+
+            </div>
+
+            <!-- Group Kiri Bawah: Nama Guru & NUPTK -->
+            <div class="header-bottom-left-group">
+              <h1 id="user-display-name" class="text-base sm:text-lg font-black tracking-wide text-amber-300 font-rajdhani uppercase drop-shadow-md leading-tight text-glow-contrast">
+                Nama Guru
+              </h1>
+              <p id="user-display-nuptk" class="text-[11px] sm:text-xs text-white font-bold opacity-95 tracking-wider drop-shadow-sm">
+                NUPTK. -
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- 2. CONTENT CONTAINER BODY -->
+        <div class="p-4 sm:p-5 space-y-4 pb-24">
+          
+          <!-- Segmented Control Tabs (FAVORIT / SEMUA MENU) -->
+          <div class="pill-segmented-bg flex items-center">
+            <button type="button" id="tab-fav" onclick="switchSegmentTab('FAV')" class="w-1/2 py-2.5 sm:py-2.5 text-center pill-tab-active transition-all duration-200 cursor-pointer active:scale-95 uppercase font-black tracking-wider text-xs">
+              FAVORIT
+            </button>
+            <button type="button" id="tab-all" onclick="switchSegmentTab('ALL')" class="w-1/2 py-2.5 sm:py-2.5 text-center pill-tab-inactive transition-all duration-200 cursor-pointer active:scale-95 uppercase font-black tracking-wider text-xs inline-flex items-center justify-center gap-1.5">
+              <span>SEMUA MENU</span>
+              <span id="badge-tab-all" class="px-1.5 py-0.5 rounded-full text-[9px] bg-red-500 text-white font-extrabold hidden">0</span>
+            </button>
+          </div>
+
+          <!-- STATUS & NOTIFIKASI IJIN REALTIME -->
+          <div id="ijin-status-notification-container" class="hidden space-y-2"></div>
+
+          <!-- CARD STATUS HARI INI -->
+          <div class="custom-card p-4 sm:p-5 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span id="badge-status" class="px-3 py-1.5 rounded-full text-[10px] font-bold pill-amber animate-pulse-subtle">Belum Absen</span>
+                  <span id="txt-jam-masuk-info" class="text-[10px] font-bold text-slate-500"><i class="fa-regular fa-clock mr-1"></i>Jam Normal: 07:00 WIB</span>
+                </div>
+                <h3 class="text-sm sm:text-base font-extrabold text-slate-800 font-rajdhani uppercase pt-1">Status Kehadiran Hari Ini</h3>
+                <p id="txt-status-hari-ini" class="text-xs text-slate-500 font-medium">Belum Melakukan Absensi Masuk</p>
+              </div>
+              <div class="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-lg shrink-0 shadow-sm">
+                <i class="fa-solid fa-calendar-check"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- MENU GRID CARDS -->
+          <div id="menu-grid-container" class="grid grid-cols-2 gap-3.5 sm:gap-4 transition-all duration-300">
+            
+            <!-- Card 1: Absensi Native -->
+            <div id="menu-card-absen" onclick="openModalAbsen()" class="cyber-menu-card card-grad-indigo p-4 sm:p-5 cursor-pointer">
+              <div class="card-arrow-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+              <i class="fa-solid fa-camera card-watermark"></i>
+              <div class="space-y-1 relative z-10 pt-2">
+                <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-base mb-2">
+                  <i class="fa-solid fa-camera-retro"></i>
+                </div>
+                <h4 class="font-extrabold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Absen Masuk / Pulang</h4>
+                <p class="text-[10px] sm:text-xs opacity-90 leading-snug">Foto Selfie & GPS Geofencing</p>
+              </div>
+            </div>
+
+            <!-- Card 2: Pengajuan Izin -->
+            <div id="menu-card-ijin" onclick="openModalIjin()" class="cyber-menu-card card-grad-emerald p-4 sm:p-5 cursor-pointer">
+              <div class="card-arrow-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+              <i class="fa-solid fa-envelope-open-text card-watermark"></i>
+              <div class="space-y-1 relative z-10 pt-2">
+                <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-base mb-2">
+                  <i class="fa-solid fa-file-signature"></i>
+                </div>
+                <h4 class="font-extrabold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Pengajuan Izin</h4>
+                <p class="text-[10px] sm:text-xs opacity-90 leading-snug">Sakit, Cuti & Tugas Dinas</p>
+              </div>
+            </div>
+
+            <!-- Card 3: Rekap Absensi -->
+            <div id="menu-card-rekap" onclick="openModalRekap()" class="cyber-menu-card card-grad-sky p-4 sm:p-5 cursor-pointer hidden">
+              <div class="card-arrow-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+              <i class="fa-solid fa-file-invoice card-watermark"></i>
+              <div class="space-y-1 relative z-10 pt-2">
+                <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-base mb-2">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <h4 class="font-extrabold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Rekap Absensi</h4>
+                <p class="text-[10px] sm:text-xs opacity-90 leading-snug">Riwayat & Ekspor PDF Dokumen</p>
+              </div>
+            </div>
+
+            <!-- Card 4: Approval Admin (Restricted Admin) -->
+            <div id="btn-menu-approval" onclick="openModalApproval()" class="cyber-menu-card card-grad-amber p-4 sm:p-5 cursor-pointer hidden">
+              <div class="card-arrow-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+              <i class="fa-solid fa-user-check card-watermark"></i>
+              <div class="space-y-1 relative z-10 pt-2">
+                <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-base mb-2 relative">
+                  <i class="fa-solid fa-clipboard-check"></i>
+                  <span id="badge-pending-count" class="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white rounded-full text-[9px] font-black flex items-center justify-center hidden">0</span>
+                </div>
+                <h4 class="font-extrabold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Approval Izin</h4>
+                <p class="text-[10px] sm:text-xs opacity-90 leading-snug">Persetujuan Khusus Admin</p>
+              </div>
+            </div>
+
+            <!-- Card 5: Pengaturan Lokasi & Jam (Restricted Admin) -->
+            <div id="btn-menu-settings" onclick="openModalSettings()" class="cyber-menu-card card-grad-rose p-4 sm:p-5 cursor-pointer hidden">
+              <div class="card-arrow-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+              <i class="fa-solid fa-sliders card-watermark"></i>
+              <div class="space-y-1 relative z-10 pt-2">
+                <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-base mb-2">
+                  <i class="fa-solid fa-gear"></i>
+                </div>
+                <h4 class="font-extrabold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Pengaturan Lokasi</h4>
+                <p class="text-[10px] sm:text-xs opacity-90 leading-snug">Jam Kerja, GPS & Drive</p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIWAYAT PRESENSI BULANAN DENGAN FILTER & COUNTER BADGE REALTIME -->
+          <div class="custom-card p-4 sm:p-5 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2.5">
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></div>
+                <h3 class="font-extrabold text-slate-800 text-xs sm:text-sm font-rajdhani uppercase tracking-wider">Riwayat Kehadiran</h3>
+                <!-- Badge Counter Total Riwayat Realtime -->
+                <span id="txt-count-history" class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase font-rajdhani bg-indigo-100 text-indigo-700 border border-indigo-200/80 shadow-sm inline-flex items-center gap-1">
+                  <i class="fa-solid fa-list-check text-[9px]"></i>
+                  <span id="lbl-count-history-val">0 Data</span>
+                </span>
+              </div>
+
+              <!-- Filter Dropdown Bulan & Tahun + Refresh Button -->
+              <div class="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
+                <div class="flex items-center gap-1.5">
+                  <select id="history-filter-bulan" onchange="loadDashboardData()" class="px-2.5 py-1.5 text-[11px] font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-700 outline-none focus:border-indigo-600 font-rajdhani uppercase cursor-pointer">
+                    <option value="01">Jan</option>
+                    <option value="02">Feb</option>
+                    <option value="03">Mar</option>
+                    <option value="04">Apr</option>
+                    <option value="05">Mei</option>
+                    <option value="06">Jun</option>
+                    <option value="07">Jul</option>
+                    <option value="08">Agt</option>
+                    <option value="09">Sep</option>
+                    <option value="10" selected>Okt</option>
+                    <option value="11">Nov</option>
+                    <option value="12">Des</option>
+                  </select>
+
+                  <select id="history-filter-tahun" onchange="loadDashboardData()" class="px-2.5 py-1.5 text-[11px] font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-700 outline-none focus:border-indigo-600 font-rajdhani uppercase cursor-pointer">
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                  </select>
+                </div>
+
+                <button type="button" id="btn-refresh-history" onclick="refreshDashboardData()" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-bold font-rajdhani uppercase flex items-center gap-1 cursor-pointer transition" title="Muat Ulang Data">
+                  <i id="icon-refresh-history" class="fa-solid fa-rotate-right"></i> Refres
+                </button>
+              </div>
+            </div>
+
+            <div id="recent-history-list" class="space-y-2">
+              <div class="text-center py-4 text-xs text-slate-400">Memuat riwayat kehadiran...</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 3. BOTTOM NAVIGATION (CURVED FLOATING DOCK) -->
+      <nav id="bottom-nav" class="bottom-nav-curve hidden">
+        <div id="nav-active-bubble" class="nav-active-bubble">
+          <i id="nav-bubble-icon" class="fa-solid fa-house text-lg sm:text-xl"></i>
+        </div>
+        <div id="nav-cutout" class="nav-cutout-notch"></div>
+
+        <div class="grid grid-cols-4 h-16 items-center text-center relative z-20">
+          <button type="button" onclick="setActiveNav('home')" class="nav-item-active flex flex-col items-center justify-center space-y-0.5 cursor-pointer">
+            <i class="fa-solid fa-house text-lg transition-all duration-300"></i>
+            <span class="text-[10px] font-bold">Beranda</span>
+          </button>
+          <button type="button" onclick="setActiveNav('absen'); openModalAbsen();" class="flex flex-col items-center justify-center space-y-0.5 cursor-pointer">
+            <i class="fa-solid fa-camera text-lg text-white/70 transition-all duration-300"></i>
+            <span class="text-[10px] font-bold text-white/70">Absen</span>
+          </button>
+          <button type="button" onclick="setActiveNav('rekap'); openModalRekap();" class="flex flex-col items-center justify-center space-y-0.5 cursor-pointer">
+            <i class="fa-solid fa-clock-rotate-left text-lg text-white/70 transition-all duration-300"></i>
+            <span class="text-[10px] font-bold text-white/70">Rekap</span>
+          </button>
+          <button type="button" onclick="setActiveNav('profil'); openModalProfil();" class="flex flex-col items-center justify-center space-y-0.5 cursor-pointer">
+            <i class="fa-solid fa-user text-lg text-white/70 transition-all duration-300"></i>
+            <span class="text-[10px] font-bold text-white/70">Profil</span>
+          </button>
+        </div>
+      </nav>
+
+    </div>
+
+
+    <!-- ================================================================= -->
+    <!-- MODAL POPUPS (DIALOG SYSTEM) -->
+    <!-- ================================================================= -->
+
+    <!-- MODAL 1: ABSEN NATIVE KAMERA & GPS -->
+    <div id="modal-absen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Absen Native Kamera & GPS</h3>
+          <button type="button" onclick="closeModal('modal-absen')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <div class="p-5 overflow-y-auto space-y-4">
+          <!-- Type Switcher -->
+          <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl text-xs">
+            <button type="button" id="type-masuk" onclick="selectAbsenType('MASUK')" class="py-2.5 rounded-lg bg-white text-indigo-600 shadow-sm font-bold font-rajdhani uppercase">Absen Masuk</button>
+            <button type="button" id="type-pulang" onclick="selectAbsenType('PULANG')" class="py-2.5 rounded-lg text-slate-500 font-bold font-rajdhani uppercase">Absen Pulang</button>
+          </div>
+
+          <!-- Opsi Checkbox Dinas Luar -->
+          <div class="p-3 bg-amber-50 rounded-xl border border-amber-200/80">
+            <label class="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" id="chk-dinas-luar" onchange="toggleDinasLuarUI()" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+              <span class="text-xs font-bold text-amber-900 font-rajdhani uppercase tracking-wider"><i class="fa-solid fa-briefcase mr-1 text-amber-600"></i> Absen Dinas Luar (Tugas Sekolah)</span>
+            </label>
+          </div>
+
+          <!-- Container Khusus Dinas Luar -->
+          <div id="container-dinas-luar" class="space-y-3 hidden p-3 bg-slate-50 rounded-2xl border border-slate-200">
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Keterangan / Lokasi Dinas Luar <span class="text-red-500">*</span></label>
+              <input type="text" id="dinas-keterangan" oninput="validateAbsenForm()" placeholder="Misal: Pendampingan Lomba di Disdik" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-indigo-600 outline-none">
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Upload Surat Tugas Resmi (PDF/Gambar) <span class="text-red-500">*</span></label>
+              <input type="file" id="dinas-file" onchange="validateAbsenForm()" accept="image/*,application/pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700">
+            </div>
+          </div>
+
+          <!-- Camera Placeholder / Native Input -->
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase tracking-wider block">Foto Selfie Realtime</label>
+            <div class="relative w-full h-48 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
+              <img id="img-preview" class="w-full h-full object-cover hidden" alt="Pratinjau Foto Selfie">
+              <div id="camera-placeholder" class="text-center space-y-2 text-slate-400">
+                <i class="fa-solid fa-camera text-3xl"></i>
+                <p class="text-xs font-semibold">Ketuk untuk Ambil Foto Selfie</p>
+              </div>
+              <input type="file" accept="image/*" capture="user" onchange="previewCapturedImage(event)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+            </div>
+            <button type="button" class="w-full py-2.5 rounded-xl border border-indigo-200 text-indigo-600 font-bold text-xs hover:bg-indigo-50 transition font-rajdhani uppercase tracking-wider flex items-center justify-center gap-2 relative">
+              <i class="fa-solid fa-camera text-sm"></i>
+              <span id="btn-camera-label">Buka Kamera HP Native</span>
+              <input type="file" accept="image/*" capture="user" onchange="previewCapturedImage(event)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+            </button>
+          </div>
+
+          <!-- GPS Location Box -->
+          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-location-dot text-emerald-600 text-base"></i>
+              <span id="gps-status-text" class="font-bold text-slate-700">Mendeteksi lokasi GPS...</span>
+            </div>
+            <button type="button" onclick="detectGeolocation()" class="text-indigo-600 hover:text-indigo-800 font-extrabold text-xs font-rajdhani uppercase">Refresh</button>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="button" id="btn-submit-absen" onclick="submitAbsenData()" disabled class="w-full py-3.5 sm:py-4 rounded-xl font-black text-xs sm:text-sm text-white bg-slate-400 cursor-not-allowed transition shadow-md font-rajdhani uppercase tracking-wider">
+            Kirim Absensi Sekarang
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL 2: PENGAJUAN IZIN -->
+    <div id="modal-ijin" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Form Pengajuan Izin</h3>
+          <button type="button" onclick="closeModal('modal-ijin')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <form id="form-ijin" onsubmit="handlePengajuanIjin(event)" class="p-5 overflow-y-auto space-y-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Jenis Pengajuan</label>
+            <select id="ijin-jenis" required class="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-300 focus:border-indigo-600 outline-none font-semibold">
+              <option value="Sakit">Sakit</option>
+              <option value="Izin">Izin Tidak Hadir</option>
+              <option value="Cuti">Cuti Kerja</option>
+              <option value="Dinas Luar">Tugas Dinas Luar</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Tgl Mulai</label>
+              <input type="date" id="ijin-tgl-mulai" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-indigo-600 outline-none font-semibold">
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Tgl Selesai</label>
+              <input type="date" id="ijin-tgl-selesai" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-indigo-600 outline-none font-semibold">
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Alasan / Alasan Pengajuan</label>
+            <textarea id="ijin-alasan" rows="3" required placeholder="Tuliskan alasan pengajuan Anda secara lengkap..." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-indigo-600 outline-none font-semibold"></textarea>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Lampiran Pendukung (PDF/Gambar)</label>
+            <input type="file" id="ijin-file" accept="image/*,application/pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700">
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-xl font-black text-xs sm:text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-md active:scale-95 font-rajdhani uppercase tracking-wider">
+            Kirim Pengajuan
+          </button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- MODAL 3: REKAP ABSENSI (RENTANG TANGGAL DARI - SAMPAI) -->
+    <div id="modal-rekap" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Rekapitulasi Absensi & PDF</h3>
+          <button type="button" onclick="closeModal('modal-rekap')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <div class="p-5 overflow-y-auto space-y-4">
+          <!-- Filters: Rentang Tanggal Spesifik -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-slate-500 uppercase font-rajdhani">Dari Tanggal</label>
+              <input type="date" id="rekap-tgl-mulai" onchange="loadRekapData()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-semibold outline-none focus:border-indigo-600">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-slate-500 uppercase font-rajdhani">Sampai Tanggal</label>
+              <input type="date" id="rekap-tgl-selesai" onchange="loadRekapData()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-semibold outline-none focus:border-indigo-600">
+            </div>
+          </div>
+
+          <button type="button" onclick="downloadRekapPdf()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition font-rajdhani uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-file-pdf"></i> Export Rekap ke PDF
+          </button>
+
+          <!-- Table Container -->
+          <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 font-bold font-rajdhani text-slate-700 uppercase">
+                  <tr>
+                    <th class="p-3">Tanggal</th>
+                    <th class="p-3">Nama</th>
+                    <th class="p-3">Msk</th>
+                    <th class="p-3">Plg</th>
+                    <th class="p-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="rekap-table-body" class="divide-y divide-slate-100 text-slate-600">
+                  <tr>
+                    <td colspan="5" class="text-center py-6 text-slate-400">Tidak ada data rekap ditemukan.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL 4: APPROVAL ADMIN (RESTRICTED ADMIN) -->
+    <div id="modal-approval" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Approval Izin & Dinas Luar</h3>
+          <button type="button" onclick="closeModal('modal-approval')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <div class="p-5 overflow-y-auto space-y-3">
+          <div id="approval-list-container" class="space-y-3">
+            <div class="text-center py-6 text-xs text-slate-400">Memuat data pengajuan pending...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL 5: PENGATURAN LOKASI & JAM (RESTRICTED ADMIN) -->
+    <div id="modal-settings" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Pengaturan Lokasi & Jam Kerja</h3>
+          <button type="button" onclick="closeModal('modal-settings')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <form id="form-settings" onsubmit="handleSaveSettings(event)" class="p-5 overflow-y-auto space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Jam Masuk Normal</label>
+              <input type="time" id="setting-jam-masuk" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Jam Pulang Normal</label>
+              <input type="time" id="setting-jam-pulang" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+            </div>
+          </div>
+
+          <div class="space-y-2 border-t border-slate-100 pt-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Koordinat Sekolah (GPS)</label>
+              <button type="button" onclick="getAdminCurrentLocation()" class="text-indigo-600 text-[10px] font-extrabold uppercase font-rajdhani">Ambil GPS Sekarang</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <input type="text" id="setting-lokasi-lat" placeholder="-6.917494" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+              <input type="text" id="setting-lokasi-lng" placeholder="107.619123" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Radius Maksimal Geofencing (Meter)</label>
+            <input type="number" id="setting-radius-meter" placeholder="100" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Folder Drive Upload (ID Folder)</label>
+            <input type="text" id="setting-folder-drive" placeholder="Biarkan kosong untuk otomatis" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+          </div>
+
+          <button type="submit" id="btn-save-settings" class="w-full py-3.5 rounded-xl font-black text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md font-rajdhani uppercase tracking-wider">
+            Simpan Pengaturan
+          </button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- MODAL 6: PROFIL PENGGUNA & EDIT PASSWORD -->
+    <div id="modal-profil" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Profil Guru & Pengguna</h3>
+          <button type="button" onclick="closeModal('modal-profil')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <form id="form-profil" onsubmit="handleSaveProfil(event)" class="p-5 overflow-y-auto space-y-4">
+          <div class="text-center space-y-1 border-b border-slate-100 pb-3">
+            <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 text-2xl font-black mx-auto flex items-center justify-center shadow-inner">
+              <i class="fa-solid fa-user-gear"></i>
+            </div>
+            <p id="profil-info-userid" class="text-xs font-extrabold text-indigo-600 font-rajdhani uppercase pt-1">ID User: -</p>
+            <p id="profil-info-role" class="text-[10px] text-slate-400 font-bold uppercase font-rajdhani">Role: -</p>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Username / ID User Baru</label>
+            <input type="text" id="profil-username" required class="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Nama Lengkap & Gelar</label>
+            <input type="text" id="profil-nama" required class="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Nomor NUPTK</label>
+            <input type="text" id="profil-nuptk" placeholder="Contoh: 5943770671130362" class="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase">Password Baru (Biarkan kosong jika tidak diubah)</label>
+            <div class="relative flex items-center">
+              <input type="password" id="profil-password" placeholder="Kosongkan jika tidak diganti" class="w-full px-3 py-2.5 pr-10 text-xs rounded-xl border border-slate-300 font-semibold outline-none">
+              <button type="button" onclick="togglePasswordVisibility('profil-password', this)" class="absolute right-3 text-slate-400 hover:text-slate-600 p-1 font-bold text-sm" title="Tampilkan/Sembunyikan Password">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-save-profil" class="w-full py-3.5 rounded-xl font-black text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md font-rajdhani uppercase tracking-wider">
+            Simpan Perubahan Profil
+          </button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- MODAL 7: WELCOME BACK DIALOG -->
+    <div id="modal-welcome" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl p-6 text-center space-y-3 max-w-xs w-full shadow-2xl animate-bounce-subtle">
+        <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
+          <i class="fa-solid fa-hand-sparkles"></i>
+        </div>
+        <h3 class="font-extrabold text-base font-rajdhani text-slate-800 uppercase">Selamat Datang!</h3>
+        <p class="text-xs text-slate-500 font-medium">
+          <span id="welcome-user-name" class="font-bold text-slate-800">Guru</span><br>
+          <span id="welcome-user-role" class="text-[10px] text-indigo-600 font-bold uppercase font-rajdhani">Pengguna</span>
+        </p>
+      </div>
+    </div>
+
+
+    <!-- MODAL 8: LOADING PROCESSOR -->
+    <div id="modal-loading" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl p-6 text-center space-y-3 max-w-xs w-full shadow-2xl">
+        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+        <h4 id="loading-title" class="font-black text-sm font-rajdhani text-slate-800 uppercase tracking-wider">MOHON TUNGGU</h4>
+        <p id="loading-message" class="text-xs text-slate-500 font-semibold">Sedang memproses data Anda...</p>
+      </div>
+    </div>
+
+
+    <!-- MODAL 9: ERROR LOGIN MODAL -->
+    <div id="modal-login-error" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl p-6 text-center space-y-4 max-w-xs w-full shadow-2xl">
+        <div class="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="space-y-1">
+          <h3 class="font-black text-base font-rajdhani text-slate-800 uppercase tracking-wider">Gagal Masuk</h3>
+          <p id="login-error-message" class="text-xs text-slate-500 font-medium">ID User atau Password salah!</p>
+        </div>
+        <button type="button" onclick="closeModal('modal-login-error')" class="w-full py-3 rounded-xl bg-slate-900 text-white font-bold text-xs uppercase font-rajdhani tracking-wider">
+          Coba Lagi
+        </button>
+      </div>
+    </div>
+
+
+    <!-- MODAL 10: SUBMIT LAPORAN PENYEBAB KETERLAMBATAN -->
+    <div id="modal-laporan-terlambat" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="modal-late-report-card w-full max-w-sm text-center">
+        
+        <!-- Modal Content Container -->
+        <div class="p-6 space-y-4">
+          <h3 class="text-base sm:text-lg font-bold text-slate-800 leading-snug">
+            Submit Laporan Penyebab Keterlambatan
+          </h3>
+          
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+            Anda telah tiba <span id="txt-menit-terlambat" class="text-orange-600 font-bold">0 menit terlambat</span>. Mohon submit Laporan Penyebab Keterlambatan
+          </p>
+
+          <div class="pt-1">
+            <textarea id="input-alasan-terlambat" rows="3" placeholder="Tuliskan alasan/penyebab keterlambatan Anda..." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none font-medium text-slate-800 bg-slate-50"></textarea>
+          </div>
+        </div>
+
+        <!-- Two Button Action Grid Split (Batal vs Submisi) -->
+        <div class="late-action-btn-grid">
+          <button type="button" onclick="cancelLateReport()" class="btn-late-cancel text-xs sm:text-sm font-bold uppercase tracking-wider cursor-pointer">
+            Batal
+          </button>
+          <button type="button" onclick="confirmSubmitLateReport()" class="btn-late-submit text-xs sm:text-sm font-bold uppercase tracking-wider cursor-pointer">
+            Submisi
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- MODAL 11: PRATINJAU & DOKUMEN PDF (VIEW / PRINT / DOWNLOAD) -->
+    <div id="modal-pdf-viewer" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+      <div class="bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] sm:h-[90vh] border border-slate-200">
+        
+        <!-- Header Modal -->
+        <div class="px-4 py-3 sm:px-5 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-sm shadow-md">
+              <i class="fa-solid fa-file-pdf"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Pratinjau Dokumen Rekap PDF</h3>
+              <p class="text-[10px] sm:text-xs text-slate-400">Periksa dokumen sebelum mencetak atau mengunduh</p>
+            </div>
+          </div>
+          <button type="button" onclick="closeModal('modal-pdf-viewer')" class="text-slate-400 hover:text-white p-2 text-xl font-bold transition cursor-pointer">&times;</button>
+        </div>
+
+        <!-- Body Modal: Iframe Preview -->
+        <div class="flex-1 bg-slate-100 relative overflow-hidden">
+          <iframe id="pdf-preview-iframe" class="w-full h-full border-none" title="Pratinjau PDF Rekap Absensi"></iframe>
+        </div>
+
+        <!-- Footer Action Buttons: Print vs Download -->
+        <div class="p-3 sm:p-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
+          <button type="button" onclick="closeModal('modal-pdf-viewer')" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs hover:bg-slate-50 transition cursor-pointer font-rajdhani uppercase tracking-wider">
+            <i class="fa-solid fa-xmark mr-1.5"></i> Tutup
+          </button>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button type="button" id="btn-pdf-modal-print" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition cursor-pointer font-rajdhani uppercase tracking-wider flex items-center justify-center gap-2">
+              <i class="fa-solid fa-print"></i> Cetak / Print
+            </button>
+            <button type="button" id="btn-pdf-modal-download" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition cursor-pointer font-rajdhani uppercase tracking-wider flex items-center justify-center gap-2">
+              <i class="fa-solid fa-download"></i> Unduh File PDF
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- MODAL 12: KONFIGURASI API SERVER BACKEND (Dukungan GitHub Pages / Hosting External) -->
+    <div id="modal-api-config" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-server text-indigo-400"></i> Pengaturan Web App API
+          </h3>
+          <button type="button" onclick="closeModal('modal-api-config')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <form id="form-api-config" onsubmit="handleSaveApiUrl(event)" class="p-5 space-y-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-700 font-rajdhani uppercase block">URL Web App Google Apps Script (/exec)</label>
+            <textarea id="input-api-url" rows="3" required placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-300 font-semibold outline-none focus:border-indigo-600 bg-slate-50 leading-relaxed"></textarea>
+            <p class="text-[10px] text-slate-500 font-medium">Diperlukan saat mengakses web dari hosting GitHub Pages agar dapat terhubung dengan Google Sheets backend.</p>
+          </div>
+
+          <div class="flex items-center gap-2 pt-2">
+            <button type="button" onclick="closeModal('modal-api-config')" class="w-1/2 py-3 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs uppercase font-rajdhani tracking-wider hover:bg-slate-50 transition">Batal</button>
+            <button type="submit" class="w-1/2 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs uppercase font-rajdhani tracking-wider shadow-md transition">Simpan URL</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <?!= include('script'); ?>
 </body>
 </html>
