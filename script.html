@@ -1,0 +1,1612 @@
+<script>
+  // Variable State Utama Aplikasi & Session Token (Persistent via localStorage)
+  var userToken = localStorage.getItem('Absen Karyawan SMP Pasundan 9_token') || null;
+  var currentUser = null;
+  var currentAbsenType = 'MASUK';
+  var capturedBase64 = null;
+  var userLat = null;
+  var userLng = null;
+  var currentActiveTab = 'home';
+  var pendingAbsenPayload = null; // Penampung payload sementara saat menunggu laporan keterlambatan
+  var cachedSettingsJamMasuk = '07:00'; // Cache jam masuk normal default
+
+  /* Safe Preview Mode untuk Canvas Preview & External Hosting Check */
+  var isCanvasPreview = typeof google === 'undefined';
+
+  /**
+   * Helper Komunikasi API Hybrid (Dukungan Dual-Mode: Native GAS & External GitHub Pages)
+   */
+  function callApi(action, payload, successCallback, errorCallback) {
+    payload = payload || {};
+    var customApiUrl = localStorage.getItem('Absen_AppsScript_Url') || '';
+
+    // Mode 1: Jika berada langsung dalam lingkungan iFrame Web App Google Apps Script
+    if (!customApiUrl && typeof google !== 'undefined' && google.script && google.script.run) {
+      var runner = google.script.run
+        .withSuccessHandler(function(res) {
+          if (successCallback) successCallback(res);
+        })
+        .withFailureHandler(function(err) {
+          if (errorCallback) errorCallback(err);
+          else showToast('Error Server: ' + err.toString(), 'error');
+        });
+
+      if (action === 'loginUser') runner.loginUser(payload.userId, payload.password);
+      else if (action === 'getDashboardData') runner.getDashboardData(payload.token || userToken, payload.bulan, payload.tahun);
+      else if (action === 'submitAbsen') runner.submitAbsen(payload.token || userToken, payload);
+      else if (action === 'submitPengajuanIjin') runner.submitPengajuanIjin(payload.token || userToken, payload);
+      else if (action === 'getRekapAbsensiData') runner.getRekapAbsensiData(payload.token || userToken, payload.targetUserId, payload.tglMulai, payload.tglSelesai, payload.page, payload.limit);
+      else if (action === 'exportRekapPdf') runner.exportRekapPdf(payload.token || userToken, payload.targetUserId, payload.tglMulai, payload.tglSelesai);
+      else if (action === 'getPengajuanList') runner.getPengajuanList(payload.token || userToken, payload.statusFilter, payload.page, payload.limit);
+      else if (action === 'updateStatusPengajuan') runner.updateStatusPengajuan(payload.token || userToken, payload.idIjin, payload.newStatus);
+      else if (action === 'getSettingsData') runner.getSettingsData(payload.token || userToken);
+      else if (action === 'saveSettings') runner.saveSettings(payload.token || userToken, payload.jamMasuk, payload.jamPulang, payload.folderDrive, payload.lokasiLat, payload.lokasiLng, payload.radiusMeter);
+      else if (action === 'updateUserProfile') runner.updateUserProfile(payload.token || userToken, payload.newUserId, payload.newNama, payload.newNuptk, payload.newPassword);
+      else if (action === 'logoutUser') runner.logoutUser(payload.token || userToken);
+      return;
+    }
+
+    // Mode 2: Jika diakses via GitHub Pages / External Hosting via REST API
+    if (!customApiUrl) {
+      var errorMsg = 'URL Web App API belum dikonfigurasi! Klik tombol "API Config" di kanan atas halaman login.';
+      if (errorCallback) errorCallback(errorMsg);
+      else showToast(errorMsg, 'error');
+      return;
+    }
+
+    fetch(customApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: action, payload: payload })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (successCallback) successCallback(data);
+    })
+    .catch(function(err) {
+      if (errorCallback) errorCallback(err);
+      else showToast('Gagal terhubung ke Server API: ' + err.toString(), 'error');
+    });
+  }
+
+  /**
+   * Helper Interceptor untuk menangani Sesi Kadaluarsa secara Otomatis
+   */
+  function handleServerResponse(res, successCallback) {
+    if (!res) return;
+    if (res.isSessionExpired) {
+      showToast(res.message || 'Sesi login Anda telah berakhir. Silakan login kembali.', 'error');
+      handleLogout();
+      return;
+    }
+    if (successCallback) successCallback(res);
+  }
+
+  /**
+   * Helper Otorisasi Frontend untuk Peran Setara Admin
+   */
+  function isAdminRole(role) {
+    if (!role) return false;
+    var r = role.toString().trim().toLowerCase();
+    return r === 'admin' || r === 'kepala sekolah' || r === 'wakasek kurikulum' || r === 'waka kurikulum';
+  }
+
+  /**
+   * Menampilkan notifikasi Toast Custom
+   */
+  function showToast(message, type) {
+    type = type || 'info';
+    var container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    var toast = document.createElement('div');
+    var bgClass = type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-red-600' : 'bg-slate-800');
+    
+    toast.className = bgClass + ' text-white text-xs sm:text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center justify-between pointer-events-auto transition-all transform duration-300';
+    toast.innerHTML = '<span class="font-medium">' + message + '</span><button onclick="this.parentElement.remove()" class="ml-3 font-black text-sm">&times;</button>';
+    
+    container.appendChild(toast);
+    setTimeout(function() { 
+      if (toast && toast.parentElement) toast.remove(); 
+    }, 4000);
+  }
+
+  function showLoading(title, message) {
+    var titleEl = document.getElementById('loading-title');
+    var msgEl = document.getElementById('loading-message');
+    var modal = document.getElementById('modal-loading');
+
+    if (titleEl) titleEl.innerText = title || 'MOHON TUNGGU';
+    if (msgEl) msgEl.innerText = message || 'Sedang memproses data Anda...';
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function hideLoading() {
+    var modal = document.getElementById('modal-loading');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  function showWelcomeModal(user) {
+    if (!user) return;
+    var nameEl = document.getElementById('welcome-user-name');
+    var roleEl = document.getElementById('welcome-user-role');
+    var modal = document.getElementById('modal-welcome');
+
+    if (nameEl) nameEl.innerText = user.namaLengkap || 'Guru';
+    if (roleEl) roleEl.innerText = user.role || 'Pengguna';
+
+    if (modal) {
+      modal.classList.remove('hidden');
+      setTimeout(function() {
+        modal.classList.add('hidden');
+      }, 1000);
+    }
+  }
+
+  // API Configuration Handlers (Dukungan Hosting GitHub Pages)
+  function openModalApiConfig() {
+    var savedUrl = localStorage.getItem('Absen_AppsScript_Url') || '';
+    var inputEl = document.getElementById('input-api-url');
+    if (inputEl) inputEl.value = savedUrl;
+    var modal = document.getElementById('modal-api-config');
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function handleSaveApiUrl(e) {
+    e.preventDefault();
+    var inputEl = document.getElementById('input-api-url');
+    var urlVal = inputEl ? inputEl.value.trim() : '';
+
+    if (!urlVal) {
+      showToast('URL Web App tidak boleh kosong!', 'error');
+      return;
+    }
+
+    localStorage.setItem('Absen_AppsScript_Url', urlVal);
+    showToast('URL Web App API berhasil disimpan!', 'success');
+    closeModal('modal-api-config');
+  }
+
+  function setActiveNav(tabName, el) {
+    currentActiveTab = tabName || 'home';
+    var tabs = ['home', 'absen', 'rekap', 'profil'];
+    var index = tabs.indexOf(currentActiveTab);
+    if (index === -1) index = 0;
+
+    var percent = (index * 25) + 12.5;
+    var bubble = document.getElementById('nav-active-bubble');
+    var cutout = document.getElementById('nav-cutout');
+    var icon = document.getElementById('nav-bubble-icon');
+
+    if (bubble && cutout) {
+      bubble.style.left = 'calc(' + percent + '% - 26px)';
+      cutout.style.left = 'calc(' + percent + '% - 36px)';
+    }
+
+    if (icon) {
+      if (currentActiveTab === 'home') icon.className = 'fa-solid fa-house text-lg sm:text-xl';
+      else if (currentActiveTab === 'absen') icon.className = 'fa-solid fa-camera text-lg sm:text-xl';
+      else if (currentActiveTab === 'rekap') icon.className = 'fa-solid fa-clock-rotate-left text-lg sm:text-xl';
+      else if (currentActiveTab === 'profil') icon.className = 'fa-solid fa-user text-lg sm:text-xl';
+    }
+
+    var navButtons = document.querySelectorAll('#bottom-nav > button');
+    navButtons.forEach(function(btn, idx) {
+      var iconEl = btn.querySelector('i');
+      var textEl = btn.querySelector('span');
+
+      if (idx === index) {
+        btn.classList.add('nav-item-active');
+        if (iconEl) iconEl.classList.add('opacity-0');
+        if (textEl) {
+          textEl.classList.remove('text-white/70');
+          textEl.classList.add('text-amber-300', 'font-extrabold');
+        }
+      } else {
+        btn.classList.remove('nav-item-active');
+        if (iconEl) iconEl.classList.remove('opacity-0');
+        if (textEl) {
+          textEl.classList.add('text-white/70');
+          textEl.classList.remove('text-amber-300', 'font-extrabold');
+        }
+      }
+    });
+  }
+
+  window.addEventListener('resize', function() {
+    if (currentUser) {
+      setActiveNav(currentActiveTab);
+    }
+  });
+
+  function switchSegmentTab(type) {
+    var tabFav = document.getElementById('tab-fav');
+    var tabAll = document.getElementById('tab-all');
+    var gridContainer = document.getElementById('menu-grid-container');
+
+    var cardAbsen = document.getElementById('menu-card-absen');
+    var cardIjin = document.getElementById('menu-card-ijin');
+    var cardRekap = document.getElementById('menu-card-rekap');
+    var cardApproval = document.getElementById('btn-menu-approval');
+    var cardSettings = document.getElementById('btn-menu-settings');
+
+    var isUserAdmin = currentUser && isAdminRole(currentUser.role);
+
+    if (type === 'FAV') {
+      if (tabFav) tabFav.className = 'w-1/2 py-2.5 sm:py-2.5 text-center pill-tab-active transition-all duration-200 cursor-pointer active:scale-95 uppercase font-black tracking-wider text-xs';
+      if (tabAll) tabAll.className = 'w-1/2 py-2.5 sm:py-2.5 text-center pill-tab-inactive transition-all duration-200 cursor-pointer active:scale-95 uppercase font-black tracking-wider text-xs inline-flex items-center justify-center gap-1.5';
+
+      if (gridContainer) {
+        gridContainer.className = 'grid grid-cols-2 gap-3.5 sm:gap-4 transition-all duration-300';
+      }
+
+      if (cardAbsen) cardAbsen.classList.remove('hidden');
+      if (cardIjin) cardIjin.classList.remove('hidden');
+
+      if (cardRekap) cardRekap.classList.add('hidden');
+      if (cardApproval) cardApproval.classList.add('hidden');
+      if (cardSettings) cardSettings.classList.add('hidden');
+    } else {
+      if (tabAll) tabAll.className = 'w-1/2 py-2.5 sm:py-2.5 text-center pill-tab-active transition-all duration-200 cursor-pointer active:scale-95 uppercase font-black tracking-wider text-xs inline-flex items-center justify-center gap-1.5';
+      if (tabFav) tabFav.className = 'w-1/2 py-2.5 sm:py-2.5 text-center pill-tab-inactive transition-all duration-200 cursor-pointer active:scale-95 uppercase font-black tracking-wider text-xs';
+
+      if (gridContainer) {
+        gridContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 sm:gap-4 transition-all duration-300';
+      }
+
+      if (cardAbsen) cardAbsen.classList.remove('hidden');
+      if (cardIjin) cardIjin.classList.remove('hidden');
+      if (cardRekap) cardRekap.classList.remove('hidden');
+
+      if (isUserAdmin) {
+        if (cardApproval) cardApproval.classList.remove('hidden');
+        if (cardSettings) cardSettings.classList.remove('hidden');
+      } else {
+        if (cardApproval) cardApproval.classList.add('hidden');
+        if (cardSettings) cardSettings.classList.add('hidden');
+      }
+    }
+  }
+
+  function checkExistingSession() {
+    userToken = localStorage.getItem('Absen Karyawan SMP Pasundan 9_token');
+    var savedUser = localStorage.getItem('Absen Karyawan SMP Pasundan 9_user');
+
+    if (!userToken) {
+      document.documentElement.classList.remove('has-active-token');
+      return;
+    }
+
+    if (savedUser) {
+      try {
+        currentUser = JSON.parse(savedUser);
+        initDashboard();
+      } catch(e) {}
+    } else {
+      showLoading('MEMUAT SESI', 'Memeriksa masa aktif sesi login Anda...');
+    }
+
+    if (isCanvasPreview) {
+      setTimeout(function() {
+        hideLoading();
+        if (!currentUser) {
+          currentUser = { 
+            userId: 'ADM01', 
+            namaLengkap: 'Pupu Hartanto, S.IP', 
+            role: 'Admin',
+            nuptk: '5943770671130362'
+          };
+          localStorage.setItem('Absen Karyawan SMP Pasundan 9_user', JSON.stringify(currentUser));
+          initDashboard();
+        }
+      }, 300);
+      return;
+    }
+
+    var elBulan = document.getElementById('history-filter-bulan');
+    var elTahun = document.getElementById('history-filter-tahun');
+    var bulan = elBulan ? elBulan.value : '';
+    var tahun = elTahun ? elTahun.value : '';
+
+    callApi('getDashboardData', { token: userToken, bulan: bulan, tahun: tahun }, 
+      function(res) {
+        hideLoading();
+        if (res && res.isSessionExpired) {
+          handleLogout();
+          showToast(res.message || 'Sesi login Anda telah berakhir. Silakan login kembali.', 'error');
+          return;
+        }
+        if (res && res.success && res.user) {
+          currentUser = res.user;
+          localStorage.setItem('Absen Karyawan SMP Pasundan 9_user', JSON.stringify(currentUser));
+          initDashboard(res);
+        } else if (!savedUser) {
+          handleLogout();
+        }
+      },
+      function(err) {
+        hideLoading();
+        if (!savedUser) {
+          showToast('Gagal memverifikasi sesi: ' + err.toString(), 'error');
+          handleLogout();
+        }
+      }
+    );
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    checkExistingSession();
+  });
+
+  function handleLogin(e) {
+    e.preventDefault();
+    var uId = document.getElementById('login-userid').value;
+    var pass = document.getElementById('login-password').value;
+    
+    var btn = document.getElementById('btn-login');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>Memeriksa...</span>';
+
+    showLoading('MOHON TUNGGU', 'Sedang memeriksa kredensial akun Anda...');
+
+    if (isCanvasPreview) {
+      setTimeout(function() {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = '<span>MASUK SEKARANG</span><i class="fa-solid fa-right-to-bracket text-sm"></i>';
+
+        if (pass === 'salah') {
+          document.getElementById('login-error-message').innerText = 'ID User atau Password salah!';
+          document.getElementById('modal-login-error').classList.remove('hidden');
+          return;
+        }
+
+        var detectedRole = 'Guru';
+        if (uId.toLowerCase().includes('adm')) detectedRole = 'Admin';
+        else if (uId.toLowerCase().includes('kepala')) detectedRole = 'Kepala Sekolah';
+        else if (uId.toLowerCase().includes('waka')) detectedRole = 'Wakasek Kurikulum';
+
+        userToken = 'MOCK_PREVIEW_TOKEN_123';
+        currentUser = { 
+          userId: uId, 
+          namaLengkap: 'Pupu Hartanto, S.IP', 
+          role: detectedRole,
+          nuptk: '5943770671130362'
+        };
+
+        localStorage.setItem('Absen Karyawan SMP Pasundan 9_token', userToken);
+        localStorage.setItem('Absen Karyawan SMP Pasundan 9_user', JSON.stringify(currentUser));
+        document.documentElement.classList.add('has-active-token');
+
+        initDashboard();
+        showWelcomeModal(currentUser);
+      }, 800);
+      return;
+    }
+
+    callApi('loginUser', { userId: uId, password: pass },
+      function(res) {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = '<span>MASUK SEKARANG</span><i class="fa-solid fa-right-to-bracket text-sm"></i>';
+        if (res.success) {
+          userToken = res.token;
+          currentUser = res.user;
+
+          localStorage.setItem('Absen Karyawan SMP Pasundan 9_token', userToken);
+          localStorage.setItem('Absen Karyawan SMP Pasundan 9_user', JSON.stringify(currentUser));
+          document.documentElement.classList.add('has-active-token');
+          
+          initDashboard();
+          showWelcomeModal(currentUser);
+        } else {
+          document.getElementById('login-error-message').innerText = res.message || 'ID User atau Password salah!';
+          document.getElementById('modal-login-error').classList.remove('hidden');
+        }
+      },
+      function(err) {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = '<span>MASUK SEKARANG</span><i class="fa-solid fa-right-to-bracket text-sm"></i>';
+        document.getElementById('login-error-message').innerText = 'Error Server: ' + err.toString();
+        document.getElementById('modal-login-error').classList.remove('hidden');
+      }
+    );
+  }
+
+  function handleLogout() {
+    if (!isCanvasPreview && userToken) {
+      callApi('logoutUser', { token: userToken });
+    }
+    userToken = null;
+    currentUser = null;
+    localStorage.removeItem('Absen Karyawan SMP Pasundan 9_token');
+    localStorage.removeItem('Absen Karyawan SMP Pasundan 9_user');
+
+    document.documentElement.classList.remove('has-active-token');
+
+    document.getElementById('view-dashboard').classList.add('hidden');
+    document.getElementById('bottom-nav').classList.add('hidden');
+    document.getElementById('view-login').classList.remove('hidden');
+    document.getElementById('form-login').reset();
+  }
+
+  function initDashboard(preloadedData) {
+    document.getElementById('view-login').classList.add('hidden');
+    document.getElementById('view-dashboard').classList.remove('hidden');
+    document.getElementById('bottom-nav').classList.remove('hidden');
+
+    if (currentUser) {
+      document.getElementById('user-display-name').innerText = currentUser.namaLengkap;
+      
+      var elNuptk = document.getElementById('user-display-nuptk');
+      if (elNuptk) {
+        var valNuptk = currentUser.nuptk || '-';
+        if (valNuptk !== '-' && valNuptk.indexOf('NUPTK') === -1) {
+          valNuptk = 'NUPTK. ' + valNuptk;
+        }
+        elNuptk.innerText = valNuptk;
+      }
+    }
+
+    setActiveNav('home');
+    switchSegmentTab('FAV');
+
+    if (preloadedData) {
+      applyDashboardData(preloadedData);
+    } else {
+      loadDashboardData();
+    }
+  }
+
+  function applyDashboardData(validRes) {
+    if (!validRes || !validRes.success) return;
+
+    if (validRes.todayRecord) {
+      document.getElementById('txt-status-hari-ini').innerText = 'Masuk: ' + validRes.todayRecord.jamMasuk + (validRes.todayRecord.jamPulang ? ' | Pulang: ' + validRes.todayRecord.jamPulang : '');
+      var isLate = validRes.todayRecord.statusKehadiran && validRes.todayRecord.statusKehadiran.indexOf('Terlambat') !== -1;
+      document.getElementById('badge-status').className = 'px-3 py-1.5 rounded-full text-[10px] font-bold ' + (isLate ? 'pill-amber' : 'pill-green');
+      document.getElementById('badge-status').innerText = validRes.todayRecord.statusKehadiran || 'Hadir';
+    } else {
+      document.getElementById('txt-status-hari-ini').innerText = 'Belum Absen Masuk';
+      document.getElementById('badge-status').className = 'px-3 py-1.5 rounded-full text-[10px] font-bold pill-amber animate-pulse-subtle';
+      document.getElementById('badge-status').innerText = 'Belum Absen';
+    }
+
+    var badge = document.getElementById('badge-pending-count');
+    var badgeTab = document.getElementById('badge-tab-all');
+
+    if (validRes.pendingApprovalsCount && validRes.pendingApprovalsCount > 0) {
+      if (badge) {
+        badge.innerText = validRes.pendingApprovalsCount;
+        badge.classList.remove('hidden');
+      }
+      if (badgeTab) {
+        badgeTab.innerText = validRes.pendingApprovalsCount;
+        badgeTab.classList.remove('hidden');
+      }
+    } else {
+      if (badge) {
+        badge.innerText = '0';
+        badge.classList.add('hidden');
+      }
+      if (badgeTab) {
+        badgeTab.innerText = '0';
+        badgeTab.classList.add('hidden');
+      }
+    }
+
+    renderUserIjinNotifications(validRes.userIjinNotifications);
+
+    if (validRes.settings && validRes.settings.jam_masuk_normal) {
+      cachedSettingsJamMasuk = validRes.settings.jam_masuk_normal;
+      document.getElementById('txt-jam-masuk-info').innerHTML = '<i class="fa-regular fa-clock mr-1"></i>Jam Normal: ' + validRes.settings.jam_masuk_normal + ' WIB';
+    }
+    renderRecentHistory(validRes.recentHistory);
+  }
+
+  function loadDashboardData() {
+    if (!userToken) {
+      handleLogout();
+      return;
+    }
+
+    var elBulan = document.getElementById('history-filter-bulan');
+    var elTahun = document.getElementById('history-filter-tahun');
+    var bulan = elBulan ? elBulan.value : '';
+    var tahun = elTahun ? elTahun.value : '';
+
+    if (isCanvasPreview) {
+      document.getElementById('txt-status-hari-ini').innerText = 'Sudah Absen Masuk (06:55)';
+      document.getElementById('badge-status').className = 'px-3 py-1.5 rounded-full text-[10px] font-bold pill-green';
+      document.getElementById('badge-status').innerText = 'Hadir';
+      renderRecentHistoryDummy();
+      return;
+    }
+
+    callApi('getDashboardData', { token: userToken, bulan: bulan, tahun: tahun },
+      function(res) {
+        handleServerResponse(res, function(validRes) {
+          applyDashboardData(validRes);
+        });
+      }
+    );
+  }
+
+  function refreshDashboardData() {
+    var icon = document.getElementById('icon-refresh-history');
+    var btn = document.getElementById('btn-refresh-history');
+    if (icon) icon.classList.add('fa-spin');
+    if (btn) btn.disabled = true;
+
+    if (isCanvasPreview) {
+      setTimeout(function() {
+        if (icon) icon.classList.remove('fa-spin');
+        if (btn) btn.disabled = false;
+        showToast('Data berhasil diperbarui! (Preview Mode)', 'success');
+        loadDashboardData();
+      }, 600);
+      return;
+    }
+
+    var elBulan = document.getElementById('history-filter-bulan');
+    var elTahun = document.getElementById('history-filter-tahun');
+    var bulan = elBulan ? elBulan.value : '';
+    var tahun = elTahun ? elTahun.value : '';
+
+    callApi('getDashboardData', { token: userToken, bulan: bulan, tahun: tahun },
+      function(res) {
+        if (icon) icon.classList.remove('fa-spin');
+        if (btn) btn.disabled = false;
+
+        handleServerResponse(res, function(validRes) {
+          showToast('Data berhasil diperbarui secara realtime!', 'success');
+          applyDashboardData(validRes);
+        });
+      },
+      function(err) {
+        if (icon) icon.classList.remove('fa-spin');
+        if (btn) btn.disabled = false;
+        showToast('Gagal memuat ulang: ' + err.toString(), 'error');
+      }
+    );
+  }
+
+  function renderUserIjinNotifications(list) {
+    var container = document.getElementById('ijin-status-notification-container');
+    if (!container) return;
+
+    if (list && list.length > 0) {
+      var html = '';
+      list.forEach(function(item) {
+        var isApproved = item.statusApproval === 'Disetujui';
+        var bgClass = isApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800';
+        var iconClass = isApproved ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-red-600';
+        var statusBadgeClass = isApproved ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white';
+
+        var ketNotice = item.jenisPengajuan === 'Dinas Luar' ? (isApproved ? 'Absen Dinas Luar Disetujui. Kehadiran Anda dicatat Sah.' : 'Absen Dinas Luar Ditolak. Status Anda dinyatakan BELUM ABSEN.') : ('Tanggal: ' + item.tanggalMulai + (item.tanggalSelesai !== item.tanggalMulai ? ' s/d ' + item.tanggalSelesai : '') + ' • Ket: ' + item.alasan);
+
+        html += '<div class="p-3 sm:p-4 rounded-2xl border ' + bgClass + ' flex items-start justify-between text-xs sm:text-sm shadow-sm transition-all">' +
+          '<div class="flex items-start gap-2.5">' +
+            '<i class="fa-solid ' + iconClass + ' text-base sm:text-lg mt-0.5 shrink-0"></i>' +
+            '<div class="space-y-0.5">' +
+              '<div class="flex items-center gap-2 flex-wrap">' +
+                '<span class="font-extrabold font-rajdhani uppercase tracking-wider text-xs sm:text-sm">' + item.jenisPengajuan + '</span>' +
+                '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase font-rajdhani ' + statusBadgeClass + '">' + item.statusApproval + '</span>' +
+              '</div>' +
+              '<p class="text-[11px] sm:text-xs opacity-90 mt-0.5">' + ketNotice + '</p>' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 p-1 font-bold text-sm shrink-0 ml-2 cursor-pointer" title="Tutup Notifikasi">&times;</button>' +
+        '</div>';
+      });
+      container.innerHTML = html;
+      container.classList.remove('hidden');
+    } else {
+      container.innerHTML = '';
+      container.classList.add('hidden');
+    }
+  }
+
+  function renderRecentHistory(list) {
+    var container = document.getElementById('recent-history-list');
+    var lblCountVal = document.getElementById('lbl-count-history-val');
+
+    var totalCount = (list && Array.isArray(list)) ? list.length : 0;
+    if (lblCountVal) {
+      lblCountVal.innerText = totalCount + ' Data';
+    }
+
+    if (!container) return;
+
+    if (!list || list.length === 0) {
+      container.innerHTML = '<div class="text-center py-6 text-xs text-slate-400 font-semibold"><i class="fa-solid fa-folder-open text-2xl mb-2 block opacity-40"></i>Tidak ada riwayat kehadiran pada bulan/tahun ini.</div>';
+      return;
+    }
+
+    var html = '';
+    list.forEach(function(item) {
+      var isLate = item.statusKehadiran && item.statusKehadiran.indexOf('Terlambat') !== -1;
+      var pillClass = isLate ? 'pill-amber' : 'pill-green';
+
+      html += '<div class="p-3 sm:p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between text-xs hover:border-indigo-200 transition shadow-sm">' +
+        '<div class="space-y-0.5">' +
+          '<p class="font-extrabold text-slate-800 font-rajdhani text-xs sm:text-sm uppercase tracking-wide">' + item.namaLengkap + '</p>' +
+          '<p class="text-[10px] sm:text-[11px] text-slate-500 font-medium">' + item.tanggal + ' • Msk: <span class="text-emerald-600 font-bold">' + (item.jamMasuk || '-') + '</span> | Plg: <span class="text-indigo-600 font-bold">' + (item.jamPulang || '-') + '</span></p>' +
+        '</div>' +
+        '<span class="px-2.5 py-1 rounded-lg text-[10px] font-bold ' + pillClass + ' shrink-0 ml-2 font-rajdhani uppercase tracking-wider">' + item.statusKehadiran + '</span>' +
+      '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function renderRecentHistoryDummy() {
+    renderRecentHistory([
+      { namaLengkap: currentUser ? currentUser.namaLengkap : 'Guru', tanggal: '28/09/2026', jamMasuk: '06:55:12', jamPulang: '15:02:40', statusKehadiran: 'Tepat Waktu' },
+      { namaLengkap: currentUser ? currentUser.namaLengkap : 'Guru', tanggal: '29/09/2026', jamMasuk: '07:12:05', jamPulang: '15:00:10', statusKehadiran: 'Terlambat (Macet di jalan)' }
+    ]);
+  }
+
+  function openModalAbsen() {
+    document.getElementById('modal-absen').classList.remove('hidden');
+    
+    var now = new Date();
+    var currentHour = now.getHours();
+    
+    if (currentHour >= 13) {
+      selectAbsenType('PULANG');
+    } else {
+      selectAbsenType('MASUK');
+    }
+
+    var chk = document.getElementById('chk-dinas-luar');
+    if (chk) chk.checked = false;
+    toggleDinasLuarUI();
+    detectGeolocation();
+  }
+
+  function selectAbsenType(type) {
+    currentAbsenType = type;
+    var btnMsk = document.getElementById('type-masuk');
+    var btnPlg = document.getElementById('type-pulang');
+
+    if (type === 'MASUK') {
+      btnMsk.className = 'py-2.5 rounded-lg bg-white text-indigo-600 shadow-sm font-bold font-rajdhani uppercase';
+      btnPlg.className = 'py-2.5 rounded-lg text-slate-500 font-bold font-rajdhani uppercase';
+    } else {
+      btnPlg.className = 'py-2.5 rounded-lg bg-white text-indigo-600 shadow-sm font-bold font-rajdhani uppercase';
+      btnMsk.className = 'py-2.5 rounded-lg text-slate-500 font-bold font-rajdhani uppercase';
+    }
+  }
+
+  function toggleDinasLuarUI() {
+    var chk = document.getElementById('chk-dinas-luar');
+    var container = document.getElementById('container-dinas-luar');
+    if (chk && container) {
+      if (chk.checked) {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+    validateAbsenForm();
+  }
+
+  function detectGeolocation() {
+    var gpsText = document.getElementById('gps-status-text');
+    if (gpsText) {
+      gpsText.innerText = 'Mendeteksi lokasi GPS (Presisi Tinggi)...';
+    }
+
+    userLat = null;
+    userLng = null;
+    validateAbsenForm();
+
+    if (navigator.geolocation) {
+      var geoOptions = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          userLat = pos.coords.latitude.toFixed(6);
+          userLng = pos.coords.longitude.toFixed(6);
+          var acc = pos.coords.accuracy ? pos.coords.accuracy.toFixed(0) : 0;
+          if (gpsText) {
+            gpsText.innerText = 'GPS: ' + userLat + ', ' + userLng + ' (±' + acc + 'm)';
+          }
+          showToast('Koordinat GPS berhasil diperoleh!', 'success');
+          validateAbsenForm();
+        },
+        function(err) {
+          userLat = null;
+          userLng = null;
+          var errorMsg = 'Akses GPS Gagal!';
+
+          switch(err.code) {
+            case err.PERMISSION_DENIED:
+              errorMsg = 'Akses lokasi ditolak! Harap izinkan akses GPS pada browser Anda.';
+              break;
+            case err.POSITION_UNAVAILABLE:
+              errorMsg = 'Sinyal/Informasi lokasi tidak tersedia. Pastikan GPS aktif.';
+              break;
+            case err.TIMEOUT:
+              errorMsg = 'Waktu pengambilan GPS habis. Silakan klik Refresh GPS.';
+              break;
+            default:
+              errorMsg = 'Terjadi kesalahan GPS: ' + err.message;
+          }
+
+          if (gpsText) {
+            gpsText.innerText = 'GPS Gagal: Akses Ditolak / Tidak Aktif';
+          }
+          showToast(errorMsg, 'error');
+          validateAbsenForm();
+        },
+        geoOptions
+      );
+    } else {
+      if (gpsText) {
+        gpsText.innerText = 'GPS Tidak Didukung Browser';
+      }
+      showToast('Browser Anda tidak mendukung HTML5 Geolocation!', 'error');
+      validateAbsenForm();
+    }
+  }
+
+  function previewCapturedImage(event) {
+    var file = event.target.files[0];
+    if (file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        capturedBase64 = e.target.result;
+        var imgPreview = document.getElementById('img-preview');
+        imgPreview.src = capturedBase64;
+        imgPreview.classList.remove('hidden');
+        document.getElementById('camera-placeholder').classList.add('hidden');
+        document.getElementById('btn-camera-label').innerText = 'Ganti Foto Selfie';
+        validateAbsenForm();
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function validateAbsenForm() {
+    var btn = document.getElementById('btn-submit-absen');
+    if (!btn) return;
+    
+    var chkDinas = document.getElementById('chk-dinas-luar');
+    var isDinas = chkDinas && chkDinas.checked;
+
+    var hasSelfie = !!capturedBase64;
+    var hasGps = !!(userLat && userLng);
+
+    var dinasValid = true;
+    if (isDinas) {
+      var dinasFileInput = document.getElementById('dinas-file');
+      var dinasKetInput = document.getElementById('dinas-keterangan');
+      var hasFile = dinasFileInput && dinasFileInput.files && dinasFileInput.files.length > 0;
+      var hasKet = dinasKetInput && dinasKetInput.value.trim() !== '';
+      dinasValid = hasFile && hasKet;
+    }
+
+    if (hasSelfie && hasGps && dinasValid) {
+      btn.disabled = false;
+      btn.className = 'w-full py-3.5 sm:py-4 rounded-xl font-black text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md active:scale-95 cursor-pointer font-rajdhani uppercase tracking-wider';
+    } else {
+      btn.disabled = true;
+      btn.className = 'w-full py-3.5 sm:py-4 rounded-xl font-black text-xs sm:text-sm text-white bg-slate-400 cursor-not-allowed transition shadow-md font-rajdhani uppercase tracking-wider';
+    }
+  }
+
+  function getMinutesLate(targetTimeStr) {
+    var now = new Date();
+    var parts = (targetTimeStr || '07:00').toString().trim().split(':');
+    var targetHours = parseInt(parts[0], 10) || 7;
+    var targetMinutes = parseInt(parts[1], 10) || 0;
+
+    var targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), targetHours, targetMinutes, 0);
+    var diffMs = now.getTime() - targetDate.getTime();
+
+    if (diffMs > 0) {
+      return Math.floor(diffMs / (1000 * 60));
+    }
+    return 0;
+  }
+
+  function submitAbsenData() {
+    if (!userLat || !userLng) {
+      showToast('Gagal Kirim! Akses GPS belum diperoleh atau ditolak.', 'error');
+      return;
+    }
+
+    if (!capturedBase64) {
+      showToast('Gagal Kirim! Harap ambil foto selfie terlebih dahulu.', 'error');
+      return;
+    }
+
+    var chkDinas = document.getElementById('chk-dinas-luar');
+    var isDinas = chkDinas && chkDinas.checked;
+
+    var payload = {
+      type: currentAbsenType,
+      imageBase64: capturedBase64,
+      latitude: userLat,
+      longitude: userLng,
+      isDinasLuar: isDinas,
+      dinasKeterangan: isDinas ? (document.getElementById('dinas-keterangan').value.trim()) : '',
+      dinasFileBase64: '',
+      dinasFileName: '',
+      dinasMimeType: '',
+      alasanTerlambat: ''
+    };
+
+    if (currentAbsenType === 'MASUK' && !isDinas && !pendingAbsenPayload) {
+      var minutesLate = getMinutesLate(cachedSettingsJamMasuk || '07:00');
+      
+      if (minutesLate > 0) {
+        pendingAbsenPayload = payload;
+        
+        var txtMenit = document.getElementById('txt-menit-terlambat');
+        if (txtMenit) txtMenit.innerText = minutesLate + ' menit terlambat';
+
+        var inputAlasan = document.getElementById('input-alasan-terlambat');
+        if (inputAlasan) inputAlasan.value = '';
+
+        var modalLate = document.getElementById('modal-laporan-terlambat');
+        if (modalLate) modalLate.classList.remove('hidden');
+        return;
+      }
+    }
+
+    executeSubmitAbsen(payload);
+  }
+
+  function cancelLateReport() {
+    pendingAbsenPayload = null;
+    var modalLate = document.getElementById('modal-laporan-terlambat');
+    if (modalLate) modalLate.classList.add('hidden');
+
+    var btn = document.getElementById('btn-submit-absen');
+    if (btn) {
+      btn.disabled = false;
+      btn.className = 'w-full py-3.5 sm:py-4 rounded-xl font-black text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md active:scale-95 cursor-pointer font-rajdhani uppercase tracking-wider';
+    }
+
+    showToast('Absensi dibatalkan. Anda dianggap belum absen.', 'info');
+  }
+
+  function confirmSubmitLateReport() {
+    var inputAlasan = document.getElementById('input-alasan-terlambat');
+    var alasanText = inputAlasan ? inputAlasan.value.trim() : '';
+
+    if (!alasanText) {
+      showToast('Mohon tuliskan alasan/penyebab keterlambatan Anda!', 'error');
+      if (inputAlasan) inputAlasan.focus();
+      return;
+    }
+
+    if (pendingAbsenPayload) {
+      pendingAbsenPayload.alasanTerlambat = alasanText;
+      
+      var modalLate = document.getElementById('modal-laporan-terlambat');
+      if (modalLate) modalLate.classList.add('hidden');
+
+      var payloadToSubmit = pendingAbsenPayload;
+      pendingAbsenPayload = null;
+      executeSubmitAbsen(payloadToSubmit);
+    } else {
+      var modalLate = document.getElementById('modal-laporan-terlambat');
+      if (modalLate) modalLate.classList.add('hidden');
+    }
+  }
+
+  function executeSubmitAbsen(payload) {
+    var isDinas = payload.isDinasLuar;
+    var btn = document.getElementById('btn-submit-absen');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+    }
+
+    showLoading('MOHON TUNGGU', isDinas ? 'Sedang mengunggah Surat Tugas Resmi & memproses Absen Dinas Luar...' : 'Sedang memproses foto selfie & lokasi GPS...');
+
+    var executeBackendCall = function(finalPayload) {
+      if (isCanvasPreview) {
+        setTimeout(function() {
+          hideLoading();
+          showToast((isDinas ? 'Pengajuan Absen Dinas Luar dikirim (Menunggu Approval Admin)!' : 'Absen ' + currentAbsenType + ' berhasil! (Preview Mode)'), 'success');
+          closeModal('modal-absen');
+          loadDashboardData();
+        }, 1000);
+        return;
+      }
+
+      callApi('submitAbsen', finalPayload,
+        function(res) {
+          hideLoading();
+          handleServerResponse(res, function(validRes) {
+            if (validRes.success) {
+              showToast(validRes.message, 'success');
+              closeModal('modal-absen');
+              var chkDinas = document.getElementById('chk-dinas-luar');
+              if (chkDinas) chkDinas.checked = false;
+              toggleDinasLuarUI();
+              document.getElementById('dinas-keterangan').value = '';
+              document.getElementById('dinas-file').value = '';
+              loadDashboardData();
+            } else {
+              showToast(validRes.message, 'error');
+              if (btn) {
+                btn.disabled = false;
+                btn.innerText = 'Kirim Absensi Sekarang';
+              }
+            }
+          });
+        },
+        function(err) {
+          hideLoading();
+          if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Kirim Absensi Sekarang';
+          }
+          showToast('Error Server: ' + err.toString(), 'error');
+        }
+      );
+    };
+
+    if (isDinas) {
+      var dinasFileInput = document.getElementById('dinas-file');
+      if (dinasFileInput && dinasFileInput.files.length > 0) {
+        var file = dinasFileInput.files[0];
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+          payload.dinasFileBase64 = evt.target.result;
+          payload.dinasFileName = file.name;
+          payload.dinasMimeType = file.type;
+          executeBackendCall(payload);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        showToast('Gagal! Surat Tugas Resmi wajib diunggah untuk Absen Dinas Luar.', 'error');
+        hideLoading();
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = 'Kirim Absensi Sekarang';
+        }
+      }
+    } else {
+      executeBackendCall(payload);
+    }
+  }
+
+  function openModalIjin() {
+    document.getElementById('modal-ijin').classList.remove('hidden');
+  }
+
+  function handlePengajuanIjin(e) {
+    e.preventDefault();
+    var formEl = e.target;
+    var submitBtn = formEl.querySelector('button[type="submit"]');
+
+    if (submitBtn) {
+      if (submitBtn.disabled) return;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Mengirim...';
+    }
+
+    showLoading('MOHON TUNGGU', 'Sedang mengirimkan pengajuan izin Anda...');
+
+    var jenis = document.getElementById('ijin-jenis').value;
+    var tglMulai = document.getElementById('ijin-tgl-mulai').value;
+    var tglSelesai = document.getElementById('ijin-tgl-selesai').value;
+    var alasan = document.getElementById('ijin-alasan').value;
+    var fileInput = document.getElementById('ijin-file');
+
+    var payload = {
+      jenisPengajuan: jenis,
+      tanggalMulai: tglMulai,
+      tanggalSelesai: tglSelesai,
+      alasan: alasan,
+      fileBase64: '',
+      fileName: '',
+      mimeType: ''
+    };
+
+    if (fileInput.files.length > 0) {
+      var file = fileInput.files[0];
+      var reader = new FileReader();
+      reader.onload = function(evt) {
+        payload.fileBase64 = evt.target.result;
+        payload.fileName = file.name;
+        payload.mimeType = file.type;
+        sendIjinPayload(payload, submitBtn);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      sendIjinPayload(payload, submitBtn);
+    }
+  }
+
+  function sendIjinPayload(payload, submitBtn) {
+    var restoreBtn = function() {
+      hideLoading();
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Kirim Pengajuan';
+      }
+    };
+
+    if (isCanvasPreview) {
+      setTimeout(function() {
+        restoreBtn();
+        showToast('Pengajuan ' + payload.jenisPengajuan + ' berhasil! (Preview Mode)', 'success');
+        closeModal('modal-ijin');
+      }, 800);
+      return;
+    }
+
+    callApi('submitPengajuanIjin', payload,
+      function(res) {
+        restoreBtn();
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success) {
+            showToast(validRes.message, 'success');
+            closeModal('modal-ijin');
+            document.getElementById('form-ijin').reset();
+            loadDashboardData();
+          } else {
+            showToast(validRes.message, 'error');
+          }
+        });
+      },
+      function(err) {
+        restoreBtn();
+        showToast('Gagal mengajukan izin: ' + err.toString(), 'error');
+      }
+    );
+  }
+
+  function openModalRekap() {
+    document.getElementById('modal-rekap').classList.remove('hidden');
+
+    var tglMulaiEl = document.getElementById('rekap-tgl-mulai');
+    var tglSelesaiEl = document.getElementById('rekap-tgl-selesai');
+
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = ('0' + (now.getMonth() + 1)).slice(-2);
+    var d = ('0' + now.getDate()).slice(-2);
+
+    if (tglMulaiEl && !tglMulaiEl.value) {
+      tglMulaiEl.value = y + '-' + m + '-01';
+    }
+    if (tglSelesaiEl && !tglSelesaiEl.value) {
+      tglSelesaiEl.value = y + '-' + m + '-' + d;
+    }
+
+    loadRekapData();
+  }
+
+  function loadRekapData() {
+    var tglMulai = document.getElementById('rekap-tgl-mulai').value;
+    var tglSelesai = document.getElementById('rekap-tgl-selesai').value;
+    var tbody = document.getElementById('rekap-table-body');
+
+    if (isCanvasPreview) {
+      tbody.innerHTML = '<tr>' +
+        '<td class="p-3 font-semibold">28/09/2026</td>' +
+        '<td class="p-3">' + (currentUser ? currentUser.namaLengkap : 'Nama Guru') + '</td>' +
+        '<td class="p-3 text-emerald-600 font-bold">06:55</td>' +
+        '<td class="p-3 text-indigo-600 font-bold">15:02</td>' +
+        '<td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold pill-green">Tepat Waktu</span></td>' +
+      '</tr>';
+      return;
+    }
+
+    callApi('getRekapAbsensiData', { targetUserId: currentUser ? currentUser.userId : '', tglMulai: tglMulai, tglSelesai: tglSelesai, page: 1, limit: 1000 },
+      function(res) {
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success && validRes.data.length > 0) {
+            var html = '';
+            validRes.data.forEach(function(row) {
+              var isLate = row.statusKehadiran && row.statusKehadiran.indexOf('Terlambat') !== -1;
+              var pillClass = isLate ? 'pill-amber' : 'pill-green';
+
+              html += '<tr>' +
+                '<td class="p-3 font-semibold">' + row.tanggal + '</td>' +
+                '<td class="p-3">' + row.namaLengkap + '</td>' +
+                '<td class="p-3 text-emerald-600 font-bold">' + (row.jamMasuk || '-') + '</td>' +
+                '<td class="p-3 text-indigo-600 font-bold">' + (row.jamPulang || '-') + '</td>' +
+                '<td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ' + pillClass + '">' + row.statusKehadiran + '</span></td>' +
+              '</tr>';
+            });
+            tbody.innerHTML = html;
+          } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-400">Tidak ada data rekap ditemukan untuk rentang tanggal ini.</td></tr>';
+          }
+        });
+      }
+    );
+  }
+
+  function downloadRekapPdf() {
+    var tglMulai = document.getElementById('rekap-tgl-mulai').value;
+    var tglSelesai = document.getElementById('rekap-tgl-selesai').value;
+
+    showLoading('MOHON TUNGGU', 'Sedang menyusun rekap & menyiapkan pratinjau dokumen PDF...');
+
+    if (isCanvasPreview) {
+      setTimeout(function() {
+        hideLoading();
+        showToast('Fitur Pratinjau PDF Aktif saat di-deploy ke Apps Script', 'info');
+      }, 800);
+      return;
+    }
+
+    callApi('exportRekapPdf', { targetUserId: currentUser ? currentUser.userId : '', tglMulai: tglMulai, tglSelesai: tglSelesai },
+      function(res) {
+        hideLoading();
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success && validRes.base64) {
+            try {
+              var base64Data = validRes.base64.split(',')[1] || validRes.base64;
+              var byteCharacters = atob(base64Data);
+              var byteNumbers = new Array(byteCharacters.length);
+              for (var i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              var byteArray = new Uint8Array(byteNumbers);
+              var blob = new Blob([byteArray], { type: 'application/pdf' });
+              var blobUrl = URL.createObjectURL(blob);
+              var fileName = validRes.fileName || 'Rekap_Absensi_Guru.pdf';
+
+              showPdfActionChoice(blobUrl, fileName);
+            } catch (errBlob) {
+              showToast('Gagal memproses file PDF: ' + errBlob.toString(), 'error');
+            }
+          } else {
+            showToast('Gagal membuat PDF: ' + (validRes.message || 'Data tidak ditemukan'), 'error');
+          }
+        });
+      },
+      function(err) {
+        hideLoading();
+        showToast('Error Server: ' + err.toString(), 'error');
+      }
+    );
+  }
+
+  function showPdfActionChoice(blobUrl, fileName) {
+    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (!isMobile) {
+      var pdfWin = window.open(blobUrl, '_blank');
+      if (pdfWin && !pdfWin.closed && typeof pdfWin.closed !== 'undefined') {
+        showToast('Pratinjau Dokumen PDF dibuka! Anda dapat memeriksa, mencetak, atau mengunduhnya di tab browser.', 'success');
+        return;
+      }
+    }
+
+    openPdfPreviewModal(blobUrl, fileName);
+  }
+
+  function openPdfPreviewModal(blobUrl, fileName) {
+    var modalEl = document.getElementById('modal-pdf-viewer');
+    if (!modalEl) {
+      var userChoice = confirm('Dokumen Laporan Rekap PDF Siap!\n\n• Tekan OK untuk Membuka PRATINJAU / CETAK LANGSUNG\n• Tekan CANCEL / BATAL untuk MENGUNDUH FILE PDF');
+      if (userChoice) {
+        window.open(blobUrl, '_blank');
+      } else {
+        triggerPdfDownload(blobUrl, fileName);
+      }
+      return;
+    }
+
+    var iframeEl = document.getElementById('pdf-preview-iframe');
+    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (iframeEl) {
+      if (isMobile) {
+        iframeEl.style.display = 'none';
+        
+        var mobileNotice = document.getElementById('pdf-mobile-notice');
+        if (!mobileNotice) {
+          mobileNotice = document.createElement('div');
+          mobileNotice.id = 'pdf-mobile-notice';
+          mobileNotice.className = 'p-6 text-center space-y-4 flex flex-col items-center justify-center h-full bg-slate-50';
+          mobileNotice.innerHTML = 
+            '<div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl shadow-inner mb-1"><i class="fa-solid fa-file-pdf"></i></div>' +
+            '<h4 class="font-extrabold text-sm sm:text-base text-slate-800 uppercase font-rajdhani">Dokumen Rekap PDF Siap Ditinjau</h4>' +
+            '<p class="text-xs text-slate-500 max-w-xs font-medium leading-relaxed">Browser HP memerlukan sentuhan langsung untuk membuka viewer PDF bawaan perangkat atau mencetak dokumen.</p>' +
+            '<button type="button" id="btn-mobile-open-pdf" class="w-full max-w-xs py-3.5 rounded-xl bg-indigo-600 text-white font-black text-xs shadow-md font-rajdhani uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition cursor-pointer"><i class="fa-solid fa-up-right-from-square"></i> Buka Dokumen di Viewer HP</button>';
+          iframeEl.parentElement.appendChild(mobileNotice);
+        } else {
+          mobileNotice.style.display = 'flex';
+        }
+
+        var btnOpenMobile = document.getElementById('btn-mobile-open-pdf');
+        if (btnOpenMobile) {
+          btnOpenMobile.onclick = function() {
+            window.open(blobUrl, '_blank');
+          };
+        }
+      } else {
+        iframeEl.style.display = 'block';
+        var mobileNoticeEl = document.getElementById('pdf-mobile-notice');
+        if (mobileNoticeEl) mobileNoticeEl.style.display = 'none';
+        iframeEl.src = blobUrl;
+      }
+    }
+
+    var btnPrint = document.getElementById('btn-pdf-modal-print');
+    var btnDownload = document.getElementById('btn-pdf-modal-download');
+
+    if (btnPrint) {
+      btnPrint.onclick = function() {
+        var win = window.open(blobUrl, '_blank');
+        if (win) {
+          win.focus();
+          setTimeout(function() { 
+            try { win.print(); } catch(e) {} 
+          }, 500);
+        } else if (iframeEl && iframeEl.contentWindow) {
+          try {
+            iframeEl.contentWindow.focus();
+            iframeEl.contentWindow.print();
+          } catch(e) {
+            window.open(blobUrl, '_blank');
+          }
+        }
+      };
+    }
+
+    if (btnDownload) {
+      btnDownload.onclick = function() {
+        triggerPdfDownload(blobUrl, fileName);
+      };
+    }
+
+    modalEl.classList.remove('hidden');
+  }
+
+  function triggerPdfDownload(blobUrl, fileName) {
+    var a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+    }, 100);
+    showToast('File PDF berhasil diunduh!', 'success');
+  }
+
+  function openModalApproval() {
+    document.getElementById('modal-approval').classList.remove('hidden');
+    loadApprovalList();
+  }
+
+  function loadApprovalList() {
+    var container = document.getElementById('approval-list-container');
+
+    if (isCanvasPreview) {
+      container.innerHTML = '<div class="p-4 bg-slate-50 border rounded-xl space-y-2 text-xs">' +
+        '<div class="flex justify-between font-bold"><span>Rahmat Hidayat (Dinas Luar)</span><span class="text-amber-600">Menunggu</span></div>' +
+        '<p class="text-slate-500">2026-09-29 — Pendampingan Lomba di Dinas Pendidikan</p>' +
+        '<a href="#" class="text-indigo-600 font-bold underline inline-block">Lihat Surat Tugas Resmi</a>' +
+        '<div class="flex gap-2 pt-2">' +
+          '<button onclick="showToast(\'Disetujui (Preview)\', \'success\');" class="px-3 py-1.5 bg-emerald-600 text-white font-bold rounded-lg">Setujui</button>' +
+          '<button onclick="showToast(\'Ditolak (Preview)\', \'error\');" class="px-3 py-1.5 bg-red-600 text-white font-bold rounded-lg">Tolak</button>' +
+        '</div>' +
+      '</div>';
+      return;
+    }
+
+    callApi('getPengajuanList', { statusFilter: 'Menunggu', page: 1, limit: 20 },
+      function(res) {
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success && validRes.data.length > 0) {
+            var html = '';
+            validRes.data.forEach(function(item) {
+              var isDinas = item.jenisPengajuan && item.jenisPengajuan.indexOf('Dinas Luar') !== -1;
+              var badgeType = isDinas ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800';
+
+              html += '<div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs shadow-sm">' +
+                '<div class="flex items-center justify-between font-bold">' +
+                  '<span class="text-slate-800 text-sm font-rajdhani">' + item.namaLengkap + '</span>' +
+                  '<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase font-rajdhani ' + badgeType + '">' + item.jenisPengajuan + '</span>' +
+                '</div>' +
+                '<p class="text-slate-600 font-medium">' + (isDinas ? ('Lokasi: ' + item.alasan) : (item.tanggalMulai + ' s/d ' + item.tanggalSelesai + ' — ' + item.alasan)) + '</p>' +
+                (item.linkLampiran ? '<div class="pt-1"><a href="' + item.linkLampiran + '" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-extrabold underline inline-flex items-center gap-1 font-rajdhani"><i class="fa-solid fa-file-pdf"></i> ' + (isDinas ? 'Buka Surat Tugas Resmi' : 'Lihat Lampiran') + '</a></div>' : '') +
+                '<div class="flex gap-2 pt-2.5 border-t border-slate-200/80">' +
+                  '<button type="button" onclick="processApproval(\'' + item.idIjin + '\', \'Disetujui\')" class="px-4 py-2 bg-emerald-600 text-white font-extrabold text-xs rounded-xl hover:bg-emerald-700 active:scale-95 transition shadow-sm font-rajdhani uppercase tracking-wide">Setujui</button>' +
+                  '<button type="button" onclick="processApproval(\'' + item.idIjin + '\', \'Ditolak\')" class="px-4 py-2 bg-red-600 text-white font-extrabold text-xs rounded-xl hover:bg-red-700 active:scale-95 transition shadow-sm font-rajdhani uppercase tracking-wide">Tolak</button>' +
+                '</div>' +
+              '</div>';
+            });
+            container.innerHTML = html;
+          } else {
+            container.innerHTML = '<div class="text-center py-6 text-xs text-slate-400">Tidak ada pengajuan pending.</div>';
+          }
+        });
+      }
+    );
+  }
+
+  function processApproval(idIjin, status) {
+    showLoading('MOHON TUNGGU', 'Sedang memproses persetujuan...');
+
+    if (isCanvasPreview) {
+      setTimeout(function() {
+        hideLoading();
+        showToast('Persetujuan berhasil diproses! (Preview)', 'success');
+        var badge = document.getElementById('badge-pending-count');
+        if (badge) badge.classList.add('hidden');
+        var badgeTab = document.getElementById('badge-tab-all');
+        if (badgeTab) badgeTab.classList.add('hidden');
+      }, 600);
+      return;
+    }
+
+    callApi('updateStatusPengajuan', { idIjin: idIjin, newStatus: status },
+      function(res) {
+        hideLoading();
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success) {
+            showToast(validRes.message, 'success');
+            loadApprovalList();
+            loadDashboardData();
+          } else {
+            showToast(validRes.message, 'error');
+          }
+        });
+      },
+      function(err) {
+        hideLoading();
+        showToast('Error Server: ' + err.toString(), 'error');
+      }
+    );
+  }
+
+  function openModalSettings() {
+    document.getElementById('modal-settings').classList.remove('hidden');
+
+    if (isCanvasPreview) {
+      document.getElementById('setting-jam-masuk').value = '07:00';
+      document.getElementById('setting-jam-pulang').value = '15:00';
+      document.getElementById('setting-lokasi-lat').value = '-6.917494';
+      document.getElementById('setting-lokasi-lng').value = '107.619123';
+      document.getElementById('setting-radius-meter').value = '100';
+      document.getElementById('setting-folder-drive').value = '';
+      return;
+    }
+
+    callApi('getSettingsData', {},
+      function(res) {
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success && validRes.settings) {
+            document.getElementById('setting-jam-masuk').value = validRes.settings.jam_masuk_normal || '07:00';
+            document.getElementById('setting-jam-pulang').value = validRes.settings.jam_pulang_normal || '15:00';
+            document.getElementById('setting-lokasi-lat').value = validRes.settings.lokasi_lat || '';
+            document.getElementById('setting-lokasi-lng').value = validRes.settings.lokasi_lng || '';
+            document.getElementById('setting-radius-meter').value = validRes.settings.radius_meter || '100';
+            document.getElementById('setting-folder-drive').value = validRes.settings.folder_drive_id || '';
+          }
+        });
+      }
+    );
+  }
+
+  function getAdminCurrentLocation() {
+    showToast('Mendeteksi koordinat GPS Anda...', 'info');
+    if (navigator.geolocation) {
+      var geoOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          document.getElementById('setting-lokasi-lat').value = pos.coords.latitude.toFixed(6);
+          document.getElementById('setting-lokasi-lng').value = pos.coords.longitude.toFixed(6);
+          showToast('Koordinat GPS berhasil tersimpan di form!', 'success');
+        },
+        function(err) {
+          showToast('Gagal mengambil GPS: ' + err.message, 'error');
+        },
+        geoOptions
+      );
+    } else {
+      showToast('Browser Anda tidak mendukung Geolocation', 'error');
+    }
+  }
+
+  function handleSaveSettings(e) {
+    e.preventDefault();
+    var jamMasuk = document.getElementById('setting-jam-masuk').value;
+    var jamPulang = document.getElementById('setting-jam-pulang').value;
+    var lokasiLat = document.getElementById('setting-lokasi-lat').value;
+    var lokasiLng = document.getElementById('setting-lokasi-lng').value;
+    var radiusMeter = document.getElementById('setting-radius-meter').value;
+    var folderDrive = document.getElementById('setting-folder-drive').value;
+
+    var btn = document.getElementById('btn-save-settings');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...';
+
+    showLoading('MOHON TUNGGU', 'Sedang menyimpan pengaturan jam kerja & lokasi...');
+
+    if (isCanvasPreview) {
+      setTimeout(function() {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = 'Simpan Pengaturan';
+        showToast('Pengaturan jam kerja & lokasi berhasil disimpan! (Preview Mode)', 'success');
+        closeModal('modal-settings');
+      }, 800);
+      return;
+    }
+
+    callApi('saveSettings', { jamMasuk: jamMasuk, jamPulang: jamPulang, folderDrive: folderDrive, lokasiLat: lokasiLat, lokasiLng: lokasiLng, radiusMeter: radiusMeter },
+      function(res) {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = 'Simpan Pengaturan';
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success) {
+            showToast(validRes.message, 'success');
+            closeModal('modal-settings');
+            loadDashboardData();
+          } else {
+            showToast(validRes.message, 'error');
+          }
+        });
+      },
+      function(err) {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = 'Simpan Pengaturan';
+        showToast('Error: ' + err.toString(), 'error');
+      }
+    );
+  }
+
+  function openModalProfil() {
+    if (!currentUser) return;
+
+    var infoUserId = document.getElementById('profil-info-userid');
+    var infoRole = document.getElementById('profil-info-role');
+    var inputUsername = document.getElementById('profil-username');
+    var inputNama = document.getElementById('profil-nama');
+    var inputNuptk = document.getElementById('profil-nuptk');
+    var inputPass = document.getElementById('profil-password');
+
+    if (infoUserId) infoUserId.innerText = 'ID User: ' + (currentUser.userId || '-');
+    if (infoRole) infoRole.innerText = 'Role: ' + (currentUser.role || '-');
+    if (inputUsername) inputUsername.value = currentUser.userId || '';
+    if (inputNama) inputNama.value = currentUser.namaLengkap || '';
+    if (inputNuptk) inputNuptk.value = currentUser.nuptk || '';
+    if (inputPass) inputPass.value = '';
+
+    var modal = document.getElementById('modal-profil');
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function togglePasswordVisibility(inputId, btnEl) {
+    var input = document.getElementById(inputId);
+    if (!input) return;
+    var icon = btnEl.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (icon) {
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      }
+    } else {
+      input.type = 'password';
+      if (icon) {
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+  }
+
+  function handleSaveProfil(e) {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    var usernameBaru = document.getElementById('profil-username').value.trim();
+    var namaBaru = document.getElementById('profil-nama').value.trim();
+    var nuptkBaru = document.getElementById('profil-nuptk').value.trim();
+    var passwordBaru = document.getElementById('profil-password').value.trim();
+
+    if (!usernameBaru) {
+      showToast('Username / ID User tidak boleh kosong!', 'error');
+      return;
+    }
+
+    if (!namaBaru) {
+      showToast('Nama Lengkap tidak boleh kosong!', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btn-save-profil');
+    if (btn) btn.disabled = true;
+
+    showLoading('MOHON TUNGGU', 'Sedang menyimpan perubahan profil Anda...');
+
+    if (isCanvasPreview) {
+      setTimeout(function() {
+        hideLoading();
+        if (btn) btn.disabled = false;
+        
+        currentUser.userId = usernameBaru;
+        currentUser.namaLengkap = namaBaru;
+        currentUser.nuptk = nuptkBaru;
+
+        localStorage.setItem('Absen Karyawan SMP Pasundan 9_user', JSON.stringify(currentUser));
+
+        var displayName = document.getElementById('user-display-name');
+        if (displayName) displayName.innerText = namaBaru;
+
+        var displayNuptk = document.getElementById('user-display-nuptk');
+        if (displayNuptk) {
+          var valNuptk = nuptkBaru || '-';
+          if (valNuptk !== '-' && valNuptk.indexOf('NUPTK') === -1) {
+            valNuptk = 'NUPTK. ' + valNuptk;
+          }
+          displayNuptk.innerText = valNuptk;
+        }
+
+        var infoUserId = document.getElementById('profil-info-userid');
+        if (infoUserId) infoUserId.innerText = 'ID User: ' + usernameBaru;
+
+        showToast('Profil berhasil diperbarui! (Preview Mode)', 'success');
+        closeModal('modal-profil');
+      }, 800);
+      return;
+    }
+
+    callApi('updateUserProfile', { newUserId: usernameBaru, newNama: namaBaru, newNuptk: nuptkBaru, newPassword: passwordBaru },
+      function(res) {
+        hideLoading();
+        if (btn) btn.disabled = false;
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success) {
+            currentUser = validRes.user;
+            localStorage.setItem('Absen Karyawan SMP Pasundan 9_user', JSON.stringify(currentUser));
+
+            var displayName = document.getElementById('user-display-name');
+            if (displayName) displayName.innerText = currentUser.namaLengkap;
+
+            var displayNuptk = document.getElementById('user-display-nuptk');
+            if (displayNuptk) {
+              var valNuptk = currentUser.nuptk || '-';
+              if (valNuptk !== '-' && valNuptk.indexOf('NUPTK') === -1) {
+                valNuptk = 'NUPTK. ' + valNuptk;
+              }
+              displayNuptk.innerText = valNuptk;
+            }
+
+            var infoUserId = document.getElementById('profil-info-userid');
+            if (infoUserId) infoUserId.innerText = 'ID User: ' + currentUser.userId;
+
+            showToast(validRes.message, 'success');
+            closeModal('modal-profil');
+            document.getElementById('profil-password').value = '';
+          } else {
+            showToast(validRes.message, 'error');
+          }
+        });
+      },
+      function(err) {
+        hideLoading();
+        if (btn) btn.disabled = false;
+        showToast('Error Server: ' + err.toString(), 'error');
+      }
+    );
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+  }
+</script>
