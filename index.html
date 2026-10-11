@@ -14,7 +14,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Embedded Custom Styles for GitHub Pages Compatibility -->
   <style>
     body {
       font-family: 'Exo 2', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -987,7 +986,7 @@
               </div>
             </div>
 
-            <!-- Card 6: Kelola User (NEW FITUR FOR ADMIN) -->
+            <!-- Card 6: Kelola User -->
             <div id="btn-menu-users" onclick="openModalUserManagement()" class="cyber-menu-card card-grad-indigo p-4 sm:p-5 cursor-pointer hidden">
               <div class="card-arrow-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
               <i class="fa-solid fa-users-gear card-watermark"></i>
@@ -1369,7 +1368,7 @@
       </div>
     </div>
 
-    <!-- MODAL 13: KELOLA USER MANAGEMENT (NEW) -->
+    <!-- MODAL 13: KELOLA USER MANAGEMENT -->
     <div id="modal-user-management" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
       <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
@@ -1415,7 +1414,7 @@
       </div>
     </div>
 
-    <!-- MODAL 14: FORM TAMBAH / EDIT USER BY ADMIN (NEW) -->
+    <!-- MODAL 14: FORM TAMBAH / EDIT USER BY ADMIN -->
     <div id="modal-add-edit-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
       <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
@@ -1708,6 +1707,11 @@
 
     function callApi(action, payload, successCallback, errorCallback) {
       payload = payload || {};
+      // PERBAIKAN UTAMA: Auto-inject userToken secara eksplisit agar permintaan HTTP POST tidak pernah kehilangan token
+      if (!payload.token && userToken) {
+        payload.token = userToken;
+      }
+
       var targetUrl = localStorage.getItem('Absen_AppsScript_Url') || DEFAULT_GAS_API_URL;
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
