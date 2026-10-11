@@ -14,6 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 
+  <!-- Embedded Custom Styles for GitHub Pages Compatibility -->
   <style>
     body {
       font-family: 'Exo 2', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -102,22 +103,22 @@
     }
 
     .top-curved-banner {
-      background: #0d2b70;
+      background: linear-gradient(135deg, #0284c7 0%, #0d3b99 45%, #08216b 100%);
       color: #ffffff;
       position: sticky;
       top: 0;
       z-index: 25;
       flex-shrink: 0;
-      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 24px rgba(13, 59, 153, 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
       overflow: hidden;
       transform-style: preserve-3d;
-      border-bottom: 2px solid #0284c7;
-      min-height: 195px;
+      border-bottom: 2px solid #38bdf8;
+      min-height: 200px;
     }
 
     @media (min-width: 640px) {
       .top-curved-banner {
-        min-height: 215px;
+        min-height: 220px;
       }
     }
 
@@ -149,22 +150,22 @@
     @keyframes wavePulseSlow {
       0% {
         transform: translateY(0px) scaleY(1);
-        opacity: 0.35;
+        opacity: 0.40;
       }
       50% {
         transform: translateY(-4px) scaleY(1.02);
-        opacity: 0.55;
+        opacity: 0.60;
       }
       100% {
         transform: translateY(3px) scaleY(0.98);
-        opacity: 0.40;
+        opacity: 0.45;
       }
     }
 
     .header-content-box {
       position: relative;
       z-index: 10;
-      min-height: 185px;
+      min-height: 190px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -176,7 +177,7 @@
       justify-content: flex-end;
       gap: 0.75rem;
       padding-top: 0.5rem;
-      padding-left: 1rem;
+      padding-left: 0.5rem;
       padding-right: 3.5rem;
       width: 100%;
       margin-left: auto;
@@ -197,7 +198,7 @@
       background: linear-gradient(135deg, #facc15, #3b82f6, #facc15);
       background-size: 200% 200%;
       filter: blur(6px);
-      opacity: 0.6;
+      opacity: 0.7;
       animation: logoAuraPulse3D 3s ease-in-out infinite alternate;
     }
 
@@ -206,7 +207,7 @@
       flex-direction: column;
       align-items: flex-start;
       justify-content: flex-end;
-      padding-bottom: 0.65rem;
+      padding-bottom: 0.75rem;
       padding-left: 0.85rem;
       z-index: 15;
       margin-top: auto;
@@ -214,10 +215,10 @@
 
     @media (max-width: 375px) {
       .top-curved-banner {
-        min-height: 180px;
+        min-height: 185px;
       }
       .header-content-box {
-        min-height: 170px;
+        min-height: 175px;
         padding: 0.75rem !important;
       }
       .header-top-right-group {
@@ -230,11 +231,11 @@
         padding-bottom: 0.35rem;
       }
       #user-display-name {
-        font-size: 0.875rem !important;
+        font-size: 0.95rem !important;
         line-height: 1.2 !important;
       }
       #user-display-nuptk {
-        font-size: 0.65rem !important;
+        font-size: 0.7rem !important;
       }
     }
 
@@ -823,7 +824,7 @@
     </div>
 
     <!-- ================================================================= -->
-    <!-- VIEW 2: DASHBOARD UTAMA (PRESET USER LOGIN) -->
+    <!-- VIEW 2: DASHBOARD UTAMA -->
     <!-- ================================================================= -->
     <div id="view-dashboard" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
       
@@ -983,6 +984,19 @@
                 </div>
                 <h4 class="font-extrabold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Pengaturan Lokasi</h4>
                 <p class="text-[10px] sm:text-xs opacity-95 font-medium leading-snug">Jam Kerja, GPS & Drive</p>
+              </div>
+            </div>
+
+            <!-- Card 6: Kelola User (NEW FITUR FOR ADMIN) -->
+            <div id="btn-menu-users" onclick="openModalUserManagement()" class="cyber-menu-card card-grad-indigo p-4 sm:p-5 cursor-pointer hidden">
+              <div class="card-arrow-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+              <i class="fa-solid fa-users-gear card-watermark"></i>
+              <div class="space-y-1 relative z-10 pt-2">
+                <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-base mb-2">
+                  <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <h4 class="font-extrabold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Kelola User</h4>
+                <p class="text-[10px] sm:text-xs opacity-95 font-medium leading-snug">Tambah, Edit & Hapus Guru</p>
               </div>
             </div>
 
@@ -1193,6 +1207,16 @@
         </div>
 
         <div class="p-5 overflow-y-auto space-y-4">
+          <!-- Dropdown Pilih Guru (Hanya Muncul untuk Admin / Kepsek / Waka) -->
+          <div id="container-rekap-target-user" class="space-y-1 hidden">
+            <label class="text-xs font-bold text-slate-800 font-rajdhani uppercase flex items-center gap-1.5">
+              <i class="fa-solid fa-user-check text-indigo-600"></i> Pilih Guru / PTK (Filter Admin)
+            </label>
+            <select id="rekap-target-user" onchange="loadRekapData()" class="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-300 font-bold text-slate-800 outline-none focus:border-indigo-600 bg-slate-50">
+              <option value="Semua">-- Semua Guru / PTK --</option>
+            </select>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
               <label class="text-[10px] font-bold text-slate-700 uppercase font-rajdhani">Dari Tanggal</label>
@@ -1345,7 +1369,117 @@
       </div>
     </div>
 
-    <!-- MODAL 7: WELCOME BACK DIALOG -->
+    <!-- MODAL 13: KELOLA USER MANAGEMENT (NEW) -->
+    <div id="modal-user-management" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-users-gear text-indigo-400"></i>
+            <h3 class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Kelola Pengguna / Guru</h3>
+          </div>
+          <button type="button" onclick="closeModal('modal-user-management')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <div class="p-4 sm:p-5 overflow-y-auto space-y-4">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5">
+            <div class="relative w-full sm:w-2/3">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text" id="search-user-input" onkeyup="filterUserListTable()" placeholder="Cari ID User, Nama Guru, atau NUPTK..." class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 font-bold text-slate-800 outline-none focus:border-indigo-600 bg-slate-50">
+            </div>
+            <button type="button" onclick="openModalAddEditUser()" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md transition font-rajdhani uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-user-plus text-xs"></i> Tambah User Baru
+            </button>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto max-h-[50vh]">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 font-extrabold font-rajdhani text-slate-800 uppercase sticky top-0 z-10">
+                  <tr>
+                    <th class="p-3">ID User</th>
+                    <th class="p-3">Nama & NUPTK</th>
+                    <th class="p-3">Role</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="user-list-table-body" class="divide-y divide-slate-200 text-slate-800 font-medium">
+                  <tr>
+                    <td colspan="5" class="text-center py-6 text-slate-600 font-semibold">Memuat daftar pengguna...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 14: FORM TAMBAH / EDIT USER BY ADMIN (NEW) -->
+    <div id="modal-add-edit-user" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+          <h3 id="lbl-add-edit-user-title" class="font-bold text-sm sm:text-base font-rajdhani uppercase tracking-wider">Tambah Pengguna Baru</h3>
+          <button type="button" onclick="closeModal('modal-add-edit-user')" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
+        </div>
+
+        <form id="form-add-edit-user" onsubmit="handleSaveUserByAdmin(event)" class="p-5 overflow-y-auto space-y-3.5">
+          <input type="hidden" id="admin-user-original-id" value="">
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-800 font-rajdhani uppercase">ID User / Username <span class="text-red-500">*</span></label>
+            <input type="text" id="admin-user-id" required placeholder="Contoh: GRU02 atau nama_user" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-bold text-slate-800 outline-none focus:border-indigo-600">
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-800 font-rajdhani uppercase">Nama Lengkap & Gelar <span class="text-red-500">*</span></label>
+            <input type="text" id="admin-user-nama" required placeholder="Contoh: Ahmad Subagja, S.Pd" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-bold text-slate-800 outline-none focus:border-indigo-600">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-800 font-rajdhani uppercase">Role / Jabatan</label>
+              <select id="admin-user-role" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-bold text-slate-800 outline-none focus:border-indigo-600 bg-slate-50">
+                <option value="Guru">Guru</option>
+                <option value="Admin">Admin</option>
+                <option value="Kepala Sekolah">Kepala Sekolah</option>
+                <option value="Wakasek Kurikulum">Wakasek Kurikulum</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-800 font-rajdhani uppercase">Status Akun</label>
+              <select id="admin-user-status" required class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-bold text-slate-800 outline-none focus:border-indigo-600 bg-slate-50">
+                <option value="Aktif">Aktif</option>
+                <option value="Nonaktif">Nonaktif</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-800 font-rajdhani uppercase">Nomor NUPTK</label>
+            <input type="text" id="admin-user-nuptk" placeholder="Contoh: 3553759659300003" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-bold text-slate-800 outline-none focus:border-indigo-600">
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-800 font-rajdhani uppercase">Password Akun <span id="lbl-password-req" class="text-red-500">*</span></label>
+            <div class="relative flex items-center">
+              <input type="password" id="admin-user-password" placeholder="Masukkan password" class="w-full px-3 py-2 pr-10 text-xs rounded-xl border border-slate-300 font-bold text-slate-800 outline-none focus:border-indigo-600">
+              <button type="button" onclick="togglePasswordVisibility('admin-user-password', this)" class="absolute right-3 text-slate-500 hover:text-slate-700 p-1 font-bold text-sm">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <p id="lbl-password-hint" class="text-[10px] text-slate-600 font-semibold pt-0.5">Wajib diisi untuk pengguna baru. Kosongkan jika tidak diubah saat edit.</p>
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" onclick="closeModal('modal-add-edit-user')" class="w-1/3 py-3 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs uppercase font-rajdhani tracking-wider hover:bg-slate-50">Batal</button>
+            <button type="submit" id="btn-save-admin-user" class="w-2/3 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs uppercase font-rajdhani tracking-wider shadow-md transition">Simpan User</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL WELCOME, LOADING & ERRORS -->
     <div id="modal-welcome" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
       <div class="bg-white rounded-3xl p-6 text-center space-y-3 max-w-xs w-full shadow-2xl animate-bounce-subtle">
         <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
@@ -1359,7 +1493,6 @@
       </div>
     </div>
 
-    <!-- MODAL 8: LOADING PROCESSOR -->
     <div id="modal-loading" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
       <div class="bg-white rounded-3xl p-6 text-center space-y-3 max-w-xs w-full shadow-2xl">
         <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
@@ -1368,7 +1501,6 @@
       </div>
     </div>
 
-    <!-- MODAL 9: ERROR LOGIN MODAL -->
     <div id="modal-login-error" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
       <div class="bg-white rounded-3xl p-6 text-center space-y-4 max-w-xs w-full shadow-2xl">
         <div class="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
@@ -1384,7 +1516,6 @@
       </div>
     </div>
 
-    <!-- MODAL 10: SUBMIT LAPORAN KETERLAMBATAN -->
     <div id="modal-laporan-terlambat" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
       <div class="modal-late-report-card w-full max-w-sm text-center">
         <div class="p-6 space-y-4">
@@ -1410,7 +1541,6 @@
       </div>
     </div>
 
-    <!-- MODAL 11: PRATINJAU DOKUMEN PDF -->
     <div id="modal-pdf-viewer" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 hidden">
       <div class="bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] sm:h-[90vh] border border-slate-200">
         <div class="px-4 py-3 sm:px-5 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
@@ -1447,7 +1577,6 @@
       </div>
     </div>
 
-    <!-- MODAL 12: KONFIGURASI API SERVER BACKEND -->
     <div id="modal-api-config" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
       <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col">
         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
@@ -1474,6 +1603,7 @@
 
   </div>
 
+  <!-- Embedded Client Logic JavaScript for GitHub Pages -->
   <script>
     var userToken = localStorage.getItem('Absen Karyawan SMP Pasundan 9_token') || null;
     var currentUser = null;
@@ -1485,6 +1615,7 @@
     var currentActiveTab = 'home';
     var pendingAbsenPayload = null;
     var cachedSettingsJamMasuk = '07:00';
+    var cachedUserListForAdmin = [];
 
     var DEFAULT_GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxpM96b1idp3nWEEZ_hDKvsq7C8MkHauXpoUk0HvQfMxtAzgxeBaTZJm7z3p2xWKT5i/exec';
 
@@ -1600,6 +1731,9 @@
         else if (action === 'getSettingsData') runner.getSettingsData(payload.token || userToken);
         else if (action === 'saveSettings') runner.saveSettings(payload.token || userToken, payload.jamMasuk, payload.jamPulang, payload.folderDriveId || payload.folderDrive, payload.lokasiLat, payload.lokasiLng, payload.radiusMeter);
         else if (action === 'updateUserProfile') runner.updateUserProfile(payload.token || userToken, payload.newUserId, payload.newNama, payload.newNuptk, payload.newPassword);
+        else if (action === 'getUserList') runner.getUserList(payload.token || userToken);
+        else if (action === 'saveUserByAdmin') runner.saveUserByAdmin(payload.token || userToken, payload);
+        else if (action === 'deleteUserByAdmin') runner.deleteUserByAdmin(payload.token || userToken, payload.targetUserId);
         else if (action === 'logoutUser') runner.logoutUser(payload.token || userToken);
         return;
       }
@@ -1795,6 +1929,7 @@
 
         var btnApproval = document.getElementById('btn-menu-approval');
         var btnSettings = document.getElementById('btn-menu-settings');
+        var btnUsers = document.getElementById('btn-menu-users');
 
         if (btnApproval) {
           if (isAdmin) btnApproval.classList.remove('hidden');
@@ -1804,6 +1939,11 @@
         if (btnSettings) {
           if (isAdmin) btnSettings.classList.remove('hidden');
           else btnSettings.classList.add('hidden');
+        }
+
+        if (btnUsers) {
+          if (isAdmin) btnUsers.classList.remove('hidden');
+          else btnUsers.classList.add('hidden');
         }
       }
 
@@ -1820,9 +1960,12 @@
       if (!data) return;
 
       if (data.settings && data.settings.jam_masuk_normal) {
-        cachedSettingsJamMasuk = data.settings.jam_masuk_normal;
+        var freshJamMasuk = data.settings.jam_masuk_normal.toString().trim();
+        if (freshJamMasuk.length === 5) freshJamMasuk += ':00';
+        cachedSettingsJamMasuk = freshJamMasuk.substring(0, 5);
+
         var jamInfo = document.getElementById('txt-jam-masuk-info');
-        if (jamInfo) jamInfo.innerHTML = '<i class="fa-regular fa-clock mr-1"></i>Jam Normal: ' + escapeHtml(data.settings.jam_masuk_normal) + ' WIB';
+        if (jamInfo) jamInfo.innerHTML = '<i class="fa-regular fa-clock mr-1"></i>Jam Normal: ' + escapeHtml(cachedSettingsJamMasuk) + ' WIB';
       }
 
       var badgeStatus = document.getElementById('badge-status');
@@ -2018,6 +2161,7 @@
       var menuRekap = document.getElementById('menu-card-rekap');
       var menuApproval = document.getElementById('btn-menu-approval');
       var menuSettings = document.getElementById('btn-menu-settings');
+      var menuUsers = document.getElementById('btn-menu-users');
 
       var roleLower = currentUser ? (currentUser.role || '').toLowerCase() : '';
       var isAdmin = (roleLower === 'admin' || roleLower === 'kepala sekolah' || roleLower.indexOf('waka') !== -1 || roleLower.indexOf('kurikulum') !== -1);
@@ -2029,6 +2173,7 @@
         if (menuRekap) menuRekap.classList.add('hidden');
         if (menuApproval) menuApproval.classList.add('hidden');
         if (menuSettings) menuSettings.classList.add('hidden');
+        if (menuUsers) menuUsers.classList.add('hidden');
       } else {
         if (btnFav) { btnFav.className = 'w-1/2 py-2.5 sm:py-2.5 text-center pill-tab-inactive transition-all duration-200 cursor-pointer active:scale-95 uppercase font-black tracking-wider text-xs'; }
         if (btnAll) { btnAll.className = 'w-1/2 py-2.5 sm:py-2.5 text-center pill-tab-active transition-all duration-200 cursor-pointer active:scale-95 uppercase font-black tracking-wider text-xs inline-flex items-center justify-center gap-1.5'; }
@@ -2036,6 +2181,7 @@
         if (menuRekap) menuRekap.classList.remove('hidden');
         if (menuApproval && isAdmin) menuApproval.classList.remove('hidden');
         if (menuSettings && isAdmin) menuSettings.classList.remove('hidden');
+        if (menuUsers && isAdmin) menuUsers.classList.remove('hidden');
       }
     }
 
@@ -2069,6 +2215,14 @@
 
       selectAbsenType('MASUK');
       detectGeolocation();
+
+      if (userToken) {
+        callApi('getDashboardData', { token: userToken }, function(res) {
+          if (res && res.success && res.settings) {
+            applyDashboardData(res);
+          }
+        });
+      }
     }
 
     function selectAbsenType(type) {
@@ -2253,16 +2407,18 @@
         var now = new Date();
         var nowHours = ('0' + now.getHours()).slice(-2);
         var nowMinutes = ('0' + now.getMinutes()).slice(-2);
-        var currentTimeStr = nowHours + ':' + nowMinutes;
 
-        if (currentTimeStr > cachedSettingsJamMasuk) {
+        var targetJam = cachedSettingsJamMasuk || '07:00';
+        if (targetJam.length === 5) targetJam += ':00';
+
+        var currentSec = (parseInt(nowHours, 10) * 3600) + (parseInt(nowMinutes, 10) * 60) + now.getSeconds();
+        var targetParts = targetJam.split(':');
+        var targetSec = (parseInt(targetParts[0], 10) * 3600) + (parseInt(targetParts[1], 10) * 60) + (parseInt(targetParts[2] || 0, 10));
+
+        if (currentSec > targetSec) {
           pendingAbsenPayload = payload;
 
-          var partsNow = currentTimeStr.split(':');
-          var partsTarget = cachedSettingsJamMasuk.split(':');
-          var minsNow = (parseInt(partsNow[0], 10) * 60) + parseInt(partsNow[1], 10);
-          var minsTarget = (parseInt(partsTarget[0], 10) * 60) + parseInt(partsTarget[1], 10);
-          var diffMins = Math.max(1, minsNow - minsTarget);
+          var diffMins = Math.max(1, Math.ceil((currentSec - targetSec) / 60));
 
           var txtMenit = document.getElementById('txt-menit-terlambat');
           if (txtMenit) txtMenit.innerText = diffMins + ' menit terlambat';
@@ -2475,15 +2631,42 @@
       if (elMulai && !elMulai.value) elMulai.value = firstDay;
       if (elSelesai && !elSelesai.value) elSelesai.value = lastDay;
 
+      var roleLower = currentUser ? (currentUser.role || '').toLowerCase() : '';
+      var isAdmin = (roleLower === 'admin' || roleLower === 'kepala sekolah' || roleLower.indexOf('waka') !== -1 || roleLower.indexOf('kurikulum') !== -1);
+      var containerTarget = document.getElementById('container-rekap-target-user');
+
+      if (isAdmin && containerTarget) {
+        containerTarget.classList.remove('hidden');
+        if (cachedUserListForAdmin && cachedUserListForAdmin.length > 0) {
+          populateRekapUserDropdown(cachedUserListForAdmin);
+        } else {
+          loadUserListForAdmin();
+        }
+      } else if (containerTarget) {
+        containerTarget.classList.add('hidden');
+      }
+
       loadRekapData();
+    }
+
+    function getSelectedRekapTargetUser() {
+      var roleLower = currentUser ? (currentUser.role || '').toLowerCase() : '';
+      var isAdmin = (roleLower === 'admin' || roleLower === 'kepala sekolah' || roleLower.indexOf('waka') !== -1 || roleLower.indexOf('kurikulum') !== -1);
+      var selectTarget = document.getElementById('rekap-target-user');
+
+      if (isAdmin && selectTarget) {
+        return selectTarget.value || 'Semua';
+      }
+      return currentUser ? currentUser.userId : '';
     }
 
     function loadRekapData() {
       var tglMulai = document.getElementById('rekap-tgl-mulai').value;
       var tglSelesai = document.getElementById('rekap-tgl-selesai').value;
+      var targetUser = getSelectedRekapTargetUser();
       var tbody = document.getElementById('rekap-table-body');
 
-      callApi('getRekapAbsensiData', { targetUserId: currentUser ? currentUser.userId : '', tglMulai: tglMulai, tglSelesai: tglSelesai, page: 1, limit: 1000 },
+      callApi('getRekapAbsensiData', { targetUserId: targetUser, tglMulai: tglMulai, tglSelesai: tglSelesai, page: 1, limit: 1000 },
         function(res) {
           handleServerResponse(res, function(validRes) {
             if (validRes.success && validRes.data.length > 0) {
@@ -2508,7 +2691,7 @@
               });
               tbody.innerHTML = html;
             } else {
-              tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-400">Tidak ada data rekap ditemukan untuk rentang tanggal ini.</td></tr>';
+              tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-400">Tidak ada data rekap ditemukan untuk pilihan ini.</td></tr>';
             }
           });
         }
@@ -2518,10 +2701,11 @@
     function downloadRekapPdf() {
       var tglMulai = document.getElementById('rekap-tgl-mulai').value;
       var tglSelesai = document.getElementById('rekap-tgl-selesai').value;
+      var targetUser = getSelectedRekapTargetUser();
 
       showLoading('MOHON TUNGGU', 'Sedang menyusun rekap & menyiapkan pratinjau dokumen PDF...');
 
-      callApi('exportRekapPdf', { targetUserId: currentUser ? currentUser.userId : '', tglMulai: tglMulai, tglSelesai: tglSelesai },
+      callApi('exportRekapPdf', { targetUserId: targetUser, tglMulai: tglMulai, tglSelesai: tglSelesai },
         function(res) {
           hideLoading();
           handleServerResponse(res, function(validRes) {
@@ -2737,6 +2921,10 @@
             if (validRes.success) {
               showToast(validRes.message, 'success');
               closeModal('modal-settings');
+
+              if (jamMasuk) {
+                cachedSettingsJamMasuk = jamMasuk.toString().trim().substring(0, 5);
+              }
               loadDashboardData();
             } else {
               showToast(validRes.message, 'error');
@@ -2829,6 +3017,229 @@
           showToast('Error Server: ' + err.toString(), 'error');
         }
       );
+    }
+
+    function openModalUserManagement() {
+      var modal = document.getElementById('modal-user-management');
+      if (modal) modal.classList.remove('hidden');
+      loadUserListForAdmin();
+    }
+
+    function loadUserListForAdmin() {
+      var tbody = document.getElementById('user-list-table-body');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-500 font-semibold"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Memuat daftar pengguna...</td></tr>';
+
+      callApi('getUserList', {}, function(res) {
+        handleServerResponse(res, function(validRes) {
+          if (validRes.success && validRes.users) {
+            cachedUserListForAdmin = validRes.users;
+            renderUserListTable(cachedUserListForAdmin);
+            populateRekapUserDropdown(cachedUserListForAdmin);
+          } else {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-red-500 font-semibold">' + escapeHtml(validRes.message || 'Gagal memuat pengguna') + '</td></tr>';
+          }
+        });
+      });
+    }
+
+    function renderUserListTable(users) {
+      var tbody = document.getElementById('user-list-table-body');
+      if (!tbody) return;
+
+      if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-400 font-semibold">Tidak ada data pengguna ditemukan.</td></tr>';
+        return;
+      }
+
+      var html = '';
+      users.forEach(function(u) {
+        var isAktif = u.status === 'Aktif';
+        var statusBadge = isAktif ? '<span class="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">Aktif</span>' : '<span class="px-2 py-0.5 rounded text-[9px] font-black bg-red-100 text-red-800 border border-red-300">Nonaktif</span>';
+
+        var safeId = escapeHtml(u.userId);
+        var safeNama = escapeHtml(u.namaLengkap);
+        var safeNuptk = escapeHtml(u.nuptk || '-');
+        var safeRole = escapeHtml(u.role || 'Guru');
+
+        html += '<tr class="hover:bg-slate-50 transition">' +
+          '<td class="p-3 font-bold text-indigo-700 font-rajdhani text-xs sm:text-sm">' + safeId + '</td>' +
+          '<td class="p-3">' +
+            '<div class="font-extrabold text-slate-900 text-xs sm:text-sm">' + safeNama + '</div>' +
+            '<div class="text-[10px] text-slate-500 font-semibold">' + (safeNuptk !== '-' && safeNuptk.indexOf('NUPTK') === -1 ? 'NUPTK. ' + safeNuptk : safeNuptk) + '</div>' +
+          '</td>' +
+          '<td class="p-3 font-bold text-slate-700 font-rajdhani text-xs">' + safeRole + '</td>' +
+          '<td class="p-3">' + statusBadge + '</td>' +
+          '<td class="p-3 text-center">' +
+            '<div class="flex items-center justify-center gap-1.5">' +
+              '<button type="button" onclick="editUserByAdmin(\'' + safeId + '\')" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold transition cursor-pointer" title="Edit Data User"><i class="fa-solid fa-pen-to-square"></i></button>' +
+              '<button type="button" onclick="executeDeleteUserByAdmin(\'' + safeId + '\', \'' + safeNama + '\')" class="p-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 text-xs font-bold transition cursor-pointer" title="Hapus User"><i class="fa-solid fa-trash-can"></i></button>' +
+            '</div>' +
+          '</td>' +
+        '</tr>';
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function filterUserListTable() {
+      var query = document.getElementById('search-user-input') ? document.getElementById('search-user-input').value.toLowerCase().trim() : '';
+      if (!query) {
+        renderUserListTable(cachedUserListForAdmin);
+        return;
+      }
+
+      var filtered = cachedUserListForAdmin.filter(function(u) {
+        return (u.userId || '').toLowerCase().indexOf(query) !== -1 ||
+               (u.namaLengkap || '').toLowerCase().indexOf(query) !== -1 ||
+               (u.nuptk || '').toLowerCase().indexOf(query) !== -1 ||
+               (u.role || '').toLowerCase().indexOf(query) !== -1;
+      });
+
+      renderUserListTable(filtered);
+    }
+
+    function openModalAddEditUser() {
+      var modal = document.getElementById('modal-add-edit-user');
+      var title = document.getElementById('lbl-add-edit-user-title');
+      var form = document.getElementById('form-add-edit-user');
+      var reqPass = document.getElementById('lbl-password-req');
+      var inputId = document.getElementById('admin-user-id');
+
+      if (form) form.reset();
+      document.getElementById('admin-user-original-id').value = '';
+      if (inputId) {
+        inputId.readOnly = false;
+        inputId.classList.remove('bg-slate-100');
+      }
+
+      if (title) title.innerText = 'Tambah Pengguna Baru';
+      if (reqPass) reqPass.classList.remove('hidden');
+
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function editUserByAdmin(userId) {
+      var userObj = cachedUserListForAdmin.find(function(u) { return u.userId === userId; });
+      if (!userObj) return;
+
+      var modal = document.getElementById('modal-add-edit-user');
+      var title = document.getElementById('lbl-add-edit-user-title');
+      var reqPass = document.getElementById('lbl-password-req');
+
+      document.getElementById('admin-user-original-id').value = userObj.userId;
+      document.getElementById('admin-user-id').value = userObj.userId;
+      document.getElementById('admin-user-nama').value = userObj.namaLengkap || '';
+      document.getElementById('admin-user-role').value = userObj.role || 'Guru';
+      document.getElementById('admin-user-status').value = userObj.status || 'Aktif';
+      document.getElementById('admin-user-nuptk').value = userObj.nuptk || '';
+      document.getElementById('admin-user-password').value = '';
+
+      if (title) title.innerText = 'Edit Data Pengguna (' + userObj.userId + ')';
+      if (reqPass) reqPass.classList.add('hidden');
+
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function handleSaveUserByAdmin(e) {
+      if (e) e.preventDefault();
+
+      var origId = document.getElementById('admin-user-original-id').value.trim();
+      var userId = document.getElementById('admin-user-id').value.trim();
+      var nama = document.getElementById('admin-user-nama').value.trim();
+      var role = document.getElementById('admin-user-role').value;
+      var status = document.getElementById('admin-user-status').value;
+      var nuptk = document.getElementById('admin-user-nuptk').value.trim();
+      var password = document.getElementById('admin-user-password').value.trim();
+
+      if (!userId || !nama) {
+        showToast('ID User dan Nama Lengkap wajib diisi!', 'error');
+        return;
+      }
+
+      if (!origId && !password) {
+        showToast('Password wajib diisi untuk pengguna baru!', 'error');
+        return;
+      }
+
+      var btn = document.getElementById('btn-save-admin-user');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Menyimpan...'; }
+
+      showLoading('MOHON TUNGGU', 'Sedang menyimpan data pengguna...');
+
+      var payload = {
+        userId: userId,
+        originalUserId: origId || userId,
+        namaLengkap: nama,
+        role: role,
+        status: status,
+        nuptk: nuptk,
+        password: password
+      };
+
+      callApi('saveUserByAdmin', payload,
+        function(res) {
+          hideLoading();
+          if (btn) { btn.disabled = false; btn.innerText = 'Simpan User'; }
+          handleServerResponse(res, function(validRes) {
+            if (validRes.success) {
+              showToast(validRes.message, 'success');
+              closeModal('modal-add-edit-user');
+              loadUserListForAdmin();
+            } else {
+              showToast(validRes.message, 'error');
+            }
+          });
+        },
+        function(err) {
+          hideLoading();
+          if (btn) { btn.disabled = false; btn.innerText = 'Simpan User'; }
+          showToast('Error Server: ' + err.toString(), 'error');
+        }
+      );
+    }
+
+    function executeDeleteUserByAdmin(userId, nama) {
+      if (currentUser && currentUser.userId.toLowerCase() === userId.toLowerCase()) {
+        showToast('Gagal! Anda tidak dapat menghapus akun Anda sendiri.', 'error');
+        return;
+      }
+
+      showLoading('MOHON TUNGGU', 'Sedang menghapus pengguna ' + nama + '...');
+
+      callApi('deleteUserByAdmin', { targetUserId: userId },
+        function(res) {
+          hideLoading();
+          handleServerResponse(res, function(validRes) {
+            if (validRes.success) {
+              showToast(validRes.message, 'success');
+              loadUserListForAdmin();
+            } else {
+              showToast(validRes.message, 'error');
+            }
+          });
+        },
+        function(err) {
+          hideLoading();
+          showToast('Error Server: ' + err.toString(), 'error');
+        }
+      );
+    }
+
+    function populateRekapUserDropdown(users) {
+      var select = document.getElementById('rekap-target-user');
+      if (!select) return;
+
+      var currentVal = select.value;
+      var html = '<option value="Semua">-- Semua Guru / PTK --</option>';
+
+      if (users && users.length > 0) {
+        users.forEach(function(u) {
+          html += '<option value="' + escapeHtml(u.userId) + '">' + escapeHtml(u.namaLengkap) + ' (' + escapeHtml(u.userId) + ')</option>';
+        });
+      }
+
+      select.innerHTML = html;
+      if (currentVal) select.value = currentVal;
     }
 
     function openModalApiConfig() {
